@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded font-semibold text-sm transition-all duration-300 cursor-pointer;
+  }
+
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  .btn-success {
+    @apply bg-green-600 text-white hover:bg-green-700 hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  .case-card {
+    @apply flex items-center bg-white border-2 border-gray-300 rounded-lg p-5 text-gray-900 no-underline transition-all duration-300 cursor-pointer hover:border-blue-600 hover:shadow-lg hover:-translate-y-0.5;
+  }
+
+  .log-item {
+    @apply px-2 py-2 rounded text-xs flex items-center gap-2 flex-wrap;
+  }
+
+  .log-item-success {
+    @apply bg-green-50 border-l-4 border-green-600;
+  }
+
+  .log-item-failed {
+    @apply bg-red-50 border-l-4 border-red-600;
+  }
+}
+
+/* Custom scrollbar */
+ ::-webkit-scrollbar {
+   width: 8px;
+   height: 8px;
+ }
+ 
+ ::-webkit-scrollbar-track {
+   background-color: #f3f4f6; /* theme('colors.gray.100') */
+ }
+ 
+ ::-webkit-scrollbar-thumb {
+   background-color: #9ca3af; /* theme('colors.gray.400') */
+   border-radius: 4px;
+ }
+ 
+ ::-webkit-scrollbar-thumb:hover {
+   background-color: #4b5563; /* theme('colors.gray.600') */
+ }

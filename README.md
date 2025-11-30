@@ -8,10 +8,9 @@ What it contains:
 - A tiny simulator that steps through canon events and logs simple actions
 
 How to run:
-1. cd CaseStudyReact
-2. npm install
-3. npm run dev
-4. npm start
+1. npm install
+2. npm run dev
+3. npm start
 
 Notes:
 - This is a minimal front-end port; the original `casestudy` project is Python CLI and backend-oriented. The React app keeps data in `public/cases` for simplicity.

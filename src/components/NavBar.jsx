@@ -35,12 +35,14 @@ export default function NavBar() {
           <nav className="hidden items-center gap-8 text-sm font-medium text-slate-700 md:flex">
             <NavLink to="/" className={navLinkClass} end>Giới thiệu</NavLink>
             <NavLink to="/case-home" className={navLinkClass}>Danh sách Case</NavLink>
+            
           </nav>
           </>
           ) : (
             <> <nav className="hidden items-center gap-8 text-sm font-medium text-slate-700 md:flex">
             <NavLink to="/user" className={navLinkClass}>Trang Chính</NavLink>
             <NavLink to="/case-list" className={navLinkClass}>Danh sách Case</NavLink>
+            <NavLink to="/case-input" className={navLinkClass}>Nhập Case</NavLink>
           </nav></>
           )}
 

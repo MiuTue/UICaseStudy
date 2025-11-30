@@ -5,6 +5,7 @@ import CaseList from './Screen/App/CaseList'
 import CaseDetail from './Screen/App/CaseDetail'
 import Login from './Screen/Auth/Login'
 import Register from './Screen/Auth/Register'
+import ForgotPassword from './Screen/Auth/ForgotPassword'
 import CaseRunner from './Screen/App/CaseRunner'
 import CaseInput from './Screen/App/CaseInput'
 import User from './Screen/App/User'
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/" element={<RejectIfAuth><Home /></RejectIfAuth>} />
           <Route path="/login" element={<RejectIfAuth><Login /></RejectIfAuth>} />
           <Route path="/register" element={<RejectIfAuth><Register /></RejectIfAuth>} />
+          <Route path="/forgot-password" element={<RejectIfAuth><ForgotPassword /></RejectIfAuth>} />
         </Routes>
       </main>
     </div>

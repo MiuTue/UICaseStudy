@@ -82,6 +82,10 @@ export default function CaseRunner() {
   const [sessionState, setSessionState] = useState(null);
   const hasFetched = useRef(false); // Thêm một ref để theo dõi việc fetch
   const [backgroundUrl, setBackgroundUrl] = useState(backgroundImage); // State cho ảnh nền
+  
+  // State lưu lịch sử điểm khi hoàn thành event (cách 2)
+  const [scoreHistory, setScoreHistory] = useState([]); // [{eventId, eventTitle, score, timestamp}]
+  const previousEventRef = useRef(null); // Theo dõi event trước đó để phát hiện event hoàn thành
 
   useEffect(() => {
     // Chỉ chạy nếu caseId tồn tại và chưa fetch lần nào
@@ -136,6 +140,11 @@ export default function CaseRunner() {
           // 3. Lưu session_id và state trả về từ API
           setSessionId(sessionData.session_id);
           setSessionState(sessionData.state);
+          
+          // Khởi tạo previousEventRef với event đầu tiên
+          if (sessionData.state?.current_event) {
+            previousEventRef.current = sessionData.state.current_event;
+          }
 
           // 4. Hiển thị tin nhắn từ dialogue_history
           if (sessionData.state && Array.isArray(sessionData.state.dialogue_history)) {
@@ -277,7 +286,44 @@ export default function CaseRunner() {
       // 3. Cập nhật lại state với dữ liệu mới từ API
       setSessionState(newSessionData.state);
 
-      // 4. Cập nhật lại toàn bộ lịch sử chat từ `dialogue_history` mới
+      // 4. Lưu điểm khi event hoàn thành (cách 2)
+      if (newSessionData.state) {
+        const state = newSessionData.state;
+        const currentEvent = state.current_event;
+        const prevEvent = previousEventRef.current;
+        
+        // Phát hiện event đã thay đổi (event trước đã hoàn thành)
+        if (prevEvent && prevEvent !== currentEvent) {
+          // Tính điểm từ mảng scores (nếu có)
+          let eventScore = 0;
+          if (Array.isArray(state.scores) && state.scores.length > 0) {
+            // Tính tổng điểm từ tất cả criteria trong scores
+            eventScore = state.scores.reduce((sum, item) => sum + (item.score || 0), 0);
+          } else {
+            // Fallback: lấy từ các trường khác
+            eventScore = state.last_event_score || state.event_score || 0;
+          }
+          
+          const eventTitle = state.last_event_title || prevEvent;
+          
+          // Thêm vào lịch sử điểm
+          setScoreHistory(prev => [...prev, {
+            eventId: prevEvent,
+            eventTitle: eventTitle,
+            score: eventScore,
+            scores: state.scores || [], // Lưu chi tiết điểm từng criterion
+            timestamp: new Date().toLocaleTimeString('vi-VN'),
+            turn: prev.length + 1
+          }]);
+          
+          console.log(`Event completed: ${prevEvent} - Score: ${eventScore}`, state.scores);
+        }
+        
+        // Cập nhật event hiện tại để theo dõi
+        previousEventRef.current = currentEvent;
+      }
+
+      // 5. Cập nhật lại toàn bộ lịch sử chat từ `dialogue_history` mới
       if (newSessionData.state && Array.isArray(newSessionData.state.dialogue_history)) {
         updateMessagesFromHistory(newSessionData.state.dialogue_history, newSessionData.state.active_personas);
       }
@@ -346,6 +392,148 @@ export default function CaseRunner() {
           </div>
         </div>
         <Footer />
+      </div>
+    );
+  }
+
+  // Kiểm tra nếu session đã kết thúc (current_event rỗng)
+  const isFinished = sessionState && !sessionState.current_event;
+  
+  // Tính tổng điểm từ scoreHistory
+  const totalScore = scoreHistory.reduce((sum, item) => sum + (item.score || 0), 0);
+  
+  // Tính điểm và xác định trạng thái hoàn thành/thất bại
+  const calculateResult = () => {
+    if (!sessionState) return { score: totalScore, isSuccess: false, maxScore: 0, scoreHistory };
+    
+    // Ưu tiên dùng totalScore từ scoreHistory đã cộng dồn
+    const finalScore = totalScore || sessionState.final_score || sessionState.total_score || sessionState.score || 0;
+    
+    // maxScore = số event * 5 điểm mỗi event (hoặc từ backend)
+    const maxScore = sessionState.max_score || (scoreHistory.length > 0 ? scoreHistory.length * 5 : 100);
+    
+    // Xác định thành công hay thất bại (>= 60% là thành công)
+    const passThreshold = sessionState.pass_threshold || 0.6;
+    const isSuccess = maxScore > 0 ? (finalScore >= (maxScore * passThreshold)) : finalScore > 0;
+    
+    return { score: finalScore, isSuccess, maxScore, scoreHistory };
+  };
+
+  // Màn hình kết thúc khi current_event rỗng
+  if (isFinished) {
+    const { score, isSuccess, maxScore, scoreHistory: historyData } = calculateResult();
+    
+    return (
+      <div className="flex min-h-screen flex-col text-slate-800">
+        <NavBar />
+        <main className="flex-1 flex items-center justify-center"
+          style={{
+            backgroundImage: `linear-gradient(rgba(20,30,50,0.9), rgba(20,30,50,0.95)), url(${backgroundImage2})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          <div className={`bg-slate-800/80 backdrop-blur-xl rounded-3xl p-10 text-center max-w-lg shadow-2xl border-2 ${isSuccess ? 'border-emerald-500' : 'border-rose-500'}`}>
+            {/* Icon và tiêu đề */}
+            <div className={`text-7xl mb-4 ${isSuccess ? 'animate-bounce' : ''}`}>
+              {isSuccess ? '🎉' : '😔'}
+            </div>
+            <h2 className={`text-3xl font-bold mb-4 ${isSuccess ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {isSuccess ? '✅ Hoàn thành xuất sắc!' : '❌ Chưa đạt yêu cầu'}
+            </h2>
+            <p className="text-slate-300 mb-6">
+              {isSuccess 
+                ? `Chúc mừng! Bạn đã hoàn thành case "${caseData.skeleton?.title}" thành công.`
+                : `Bạn chưa đạt yêu cầu cho case "${caseData.skeleton?.title}". Hãy thử lại!`
+              }
+            </p>
+            
+            {/* Điểm số */}
+            <div className={`rounded-2xl p-6 mb-6 ${isSuccess ? 'bg-emerald-900/50' : 'bg-rose-900/50'}`}>
+              <p className="text-slate-400 text-sm mb-2">Điểm của bạn</p>
+              <div className={`text-6xl font-extrabold ${isSuccess ? 'text-emerald-400' : 'text-rose-400'}`}>
+                {score}
+              </div>
+              {maxScore > 0 && (
+                <p className="text-slate-400 text-sm mt-2">/ {maxScore} điểm</p>
+              )}
+              
+              {/* Progress bar */}
+              <div className="w-full h-3 bg-slate-700 rounded-full mt-4 overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-1000 ${isSuccess ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                  style={{ width: `${Math.min((score / maxScore) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Chi tiết điểm từng event từ scoreHistory */}
+            {historyData.length > 0 && (
+              <div className="text-left bg-slate-900/50 rounded-xl p-4 mb-6 max-h-48 overflow-y-auto">
+                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                  <span>📊</span> Chi tiết điểm từng sự kiện
+                </h3>
+                <div className="space-y-2">
+                  {historyData.map((item, index) => (
+                    <div key={index} className="flex justify-between items-center text-sm py-2 border-b border-slate-700/50">
+                      <div className="flex-1">
+                        <span className="text-slate-300">{item.eventTitle}</span>
+                        <span className="text-slate-500 text-xs ml-2">({item.timestamp})</span>
+                      </div>
+                      <span className={`font-bold ${(item.score || 0) >= 3 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        +{item.score || 0}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {/* Tổng điểm */}
+                <div className="mt-3 pt-3 border-t border-slate-600 flex justify-between font-bold">
+                  <span className="text-white">Tổng cộng:</span>
+                  <span className={isSuccess ? 'text-emerald-400' : 'text-rose-400'}>{score}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Nhật ký hoạt động */}
+            {messages.length > 0 && (
+              <div className="text-left bg-slate-900/50 rounded-xl p-4 mb-6 max-h-40 overflow-y-auto">
+                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                  <span>📋</span> Nhật ký ({messages.length} tin nhắn)
+                </h3>
+                <div className="space-y-1">
+                  {messages.slice(-5).map((msg) => (
+                    <div key={msg.id} className="text-xs text-slate-400 py-1 border-b border-slate-700/30">
+                      <span className="font-semibold text-slate-300">
+                        {msg.sender === 'user' ? 'Bạn' : msg.speakerName}:
+                      </span>{' '}
+                      {msg.text.length > 60 ? msg.text.substring(0, 60) + '...' : msg.text}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Nút hành động */}
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Link 
+                to="/case-list" 
+                className="inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold px-6 py-3 rounded-xl transition"
+              >
+                <span>📋</span> Danh sách Case
+              </Link>
+              <button 
+                onClick={() => window.location.reload()} 
+                className={`inline-flex items-center gap-2 font-semibold px-6 py-3 rounded-xl transition ${
+                  isSuccess 
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white' 
+                    : 'bg-rose-600 hover:bg-rose-500 text-white'
+                }`}
+              >
+                <span>🔄</span> {isSuccess ? 'Chơi lại' : 'Thử lại'}
+              </button>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -440,6 +628,34 @@ export default function CaseRunner() {
           {/* Right: Scene Summary Panel */}
           <div className="hidden h-[calc(100vh-80px)] flex-col overflow-y-auto p-6 lg:flex">
             <div className="space-y-6">
+              {/* Score Section - Điểm tích lũy realtime */}
+              <section className="rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800/50 to-emerald-900/20 backdrop-blur-lg shadow-2xl shadow-black/20 p-6 mb-2">
+                <h2 className="text-lg font-extrabold text-white flex items-center gap-2 mb-3">
+                  <span>📊</span> Điểm tích lũy
+                </h2>
+                <div className="text-center mb-4">
+                  <div className="text-5xl font-bold text-emerald-400">{totalScore}</div>
+                  <p className="text-slate-400 text-sm mt-1">điểm</p>
+                </div>
+                
+                {/* Lịch sử điểm gần nhất */}
+                {scoreHistory.length > 0 && (
+                  <div className="bg-slate-900/50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                    <p className="text-xs text-slate-400 mb-2 font-semibold">Lịch sử ({scoreHistory.length} event):</p>
+                    {scoreHistory.slice(-3).reverse().map((item, idx) => (
+                      <div key={idx} className="flex justify-between text-xs py-1.5 border-b border-slate-700/50 last:border-0">
+                        <span className="text-slate-300 truncate max-w-[150px]">{item.eventTitle}</span>
+                        <span className="text-emerald-400 font-semibold">+{item.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {scoreHistory.length === 0 && (
+                  <p className="text-xs text-slate-500 italic text-center">Chưa có điểm nào</p>
+                )}
+              </section>
+
               {/* Scene Summary Section */}
               <section className="rounded-2xl border border-slate-700 bg-slate-800/50 backdrop-blur-lg shadow-2xl shadow-black/20 p-6 mb-2 flex flex-col">
                 <h2 className="text-lg font-extrabold text-white flex items-center gap-2 mb-3">

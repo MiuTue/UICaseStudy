@@ -83,8 +83,9 @@ export default function CaseRunner() {
   const hasFetched = useRef(false); // Thêm một ref để theo dõi việc fetch
   const [backgroundUrl, setBackgroundUrl] = useState(backgroundImage); // State cho ảnh nền
   
-  // State lưu lịch sử điểm khi hoàn thành event (cách 2)
-  const [scoreHistory, setScoreHistory] = useState([]); // [{eventId, eventTitle, score, timestamp}]
+  // State lưu điểm và phân tích theo từng event
+  // eventScores = { "CE1": { score: 5, scores: [...], analysis: [...] }, "CE2": { ... } }
+  const [eventScores, setEventScores] = useState({});
   const previousEventRef = useRef(null); // Theo dõi event trước đó để phát hiện event hoàn thành
 
   useEffect(() => {
@@ -286,37 +287,30 @@ export default function CaseRunner() {
       // 3. Cập nhật lại state với dữ liệu mới từ API
       setSessionState(newSessionData.state);
 
-      // 4. Lưu điểm khi event hoàn thành (cách 2)
+      // 4. Lưu điểm và phân tích theo event (cập nhật mỗi lần nhận response)
       if (newSessionData.state) {
         const state = newSessionData.state;
         const currentEvent = state.current_event;
-        const prevEvent = previousEventRef.current;
         
-        // Phát hiện event đã thay đổi (event trước đã hoàn thành)
-        if (prevEvent && prevEvent !== currentEvent) {
-          // Tính điểm từ mảng scores (nếu có)
-          let eventScore = 0;
-          if (Array.isArray(state.scores) && state.scores.length > 0) {
-            // Tính tổng điểm từ tất cả criteria trong scores
-            eventScore = state.scores.reduce((sum, item) => sum + (item.score || 0), 0);
-          } else {
-            // Fallback: lấy từ các trường khác
-            eventScore = state.last_event_score || state.event_score || 0;
-          }
+        // Lưu/cập nhật điểm cho event hiện tại nếu có scores
+        if (currentEvent && state.event_summary?.scores && Array.isArray(state.event_summary.scores)) {
+          const scores = state.event_summary.scores;
           
-          const eventTitle = state.last_event_title || prevEvent;
+          // Tính tổng điểm từ tất cả criteria
+          const totalEventScore = scores.reduce((sum, item) => sum + (item.score || 0), 0);
           
-          // Thêm vào lịch sử điểm
-          setScoreHistory(prev => [...prev, {
-            eventId: prevEvent,
-            eventTitle: eventTitle,
-            score: eventScore,
-            scores: state.scores || [], // Lưu chi tiết điểm từng criterion
-            timestamp: new Date().toLocaleTimeString('vi-VN'),
-            turn: prev.length + 1
-          }]);
+          // Cập nhật eventScores dict
+          setEventScores(prev => ({
+            ...prev,
+            [currentEvent]: {
+              eventId: currentEvent,
+              score: totalEventScore,
+              scores: scores, // Lưu chi tiết từng criterion với score và analysis
+              timestamp: new Date().toLocaleTimeString('vi-VN'),
+            }
+          }));
           
-          console.log(`Event completed: ${prevEvent} - Score: ${eventScore}`, state.scores);
+          console.log(`Event ${currentEvent} - Score: ${totalEventScore}`, scores);
         }
         
         // Cập nhật event hiện tại để theo dõi
@@ -399,29 +393,41 @@ export default function CaseRunner() {
   // Kiểm tra nếu session đã kết thúc (current_event rỗng)
   const isFinished = sessionState && !sessionState.current_event;
   
-  // Tính tổng điểm từ scoreHistory
-  const totalScore = scoreHistory.reduce((sum, item) => sum + (item.score || 0), 0);
+  // Tính tổng điểm từ eventScores dict
+  const totalScore = Object.values(eventScores).reduce((sum, event) => sum + (event.score || 0), 0);
+  
+  // Lấy số event đã có điểm
+  const eventCount = Object.keys(eventScores).length;
   
   // Tính điểm và xác định trạng thái hoàn thành/thất bại
   const calculateResult = () => {
-    if (!sessionState) return { score: totalScore, isSuccess: false, maxScore: 0, scoreHistory };
+    if (!sessionState) return { score: totalScore, isSuccess: false, maxScore: 0, eventScores };
     
-    // Ưu tiên dùng totalScore từ scoreHistory đã cộng dồn
+    // Ưu tiên dùng totalScore từ eventScores đã cộng dồn
     const finalScore = totalScore || sessionState.final_score || sessionState.total_score || sessionState.score || 0;
     
-    // maxScore = số event * 5 điểm mỗi event (hoặc từ backend)
-    const maxScore = sessionState.max_score || (scoreHistory.length > 0 ? scoreHistory.length * 5 : 100);
+    // maxScore = số event * 5 điểm mỗi criterion (tạm tính mỗi event có 1 criterion = 5 điểm max)
+    // Hoặc tính từ số criteria thực tế
+    let maxScore = sessionState.max_score || 0;
+    if (!maxScore && eventCount > 0) {
+      // Tính max score từ số criteria trong mỗi event (mỗi criterion max 5 điểm)
+      maxScore = Object.values(eventScores).reduce((sum, event) => {
+        const criteriaCount = event.scores?.length || 1;
+        return sum + (criteriaCount * 5);
+      }, 0);
+    }
+    if (!maxScore) maxScore = 100;
     
     // Xác định thành công hay thất bại (>= 60% là thành công)
     const passThreshold = sessionState.pass_threshold || 0.6;
     const isSuccess = maxScore > 0 ? (finalScore >= (maxScore * passThreshold)) : finalScore > 0;
     
-    return { score: finalScore, isSuccess, maxScore, scoreHistory };
+    return { score: finalScore, isSuccess, maxScore, eventScores };
   };
 
   // Màn hình kết thúc khi current_event rỗng
   if (isFinished) {
-    const { score, isSuccess, maxScore, scoreHistory: historyData } = calculateResult();
+    const { score, isSuccess, maxScore, eventScores: evtScores } = calculateResult();
     
     return (
       <div className="flex min-h-screen flex-col text-slate-800">
@@ -467,29 +473,53 @@ export default function CaseRunner() {
               </div>
             </div>
 
-            {/* Chi tiết điểm từng event từ scoreHistory */}
-            {historyData.length > 0 && (
-              <div className="text-left bg-slate-900/50 rounded-xl p-4 mb-6 max-h-48 overflow-y-auto">
-                <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-                  <span>📊</span> Chi tiết điểm từng sự kiện
+            {/* Chi tiết điểm và phân tích từng event */}
+            {Object.keys(evtScores).length > 0 && (
+              <div className="text-left bg-slate-900/50 rounded-xl p-4 mb-6 max-h-[400px] overflow-y-auto">
+                <h3 className="text-white font-semibold mb-4 flex items-center gap-2 text-lg">
+                  <span>📊</span> Chi tiết điểm & Phân tích
                 </h3>
-                <div className="space-y-2">
-                  {historyData.map((item, index) => (
-                    <div key={index} className="flex justify-between items-center text-sm py-2 border-b border-slate-700/50">
-                      <div className="flex-1">
-                        <span className="text-slate-300">{item.eventTitle}</span>
-                        <span className="text-slate-500 text-xs ml-2">({item.timestamp})</span>
+                <div className="space-y-4">
+                  {Object.entries(evtScores).map(([eventId, eventData]) => (
+                    <div key={eventId} className="bg-slate-800/50 rounded-lg p-3 border border-slate-700">
+                      {/* Header event */}
+                      <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-600">
+                        <span className="text-white font-semibold">{eventId}</span>
+                        <span className={`font-bold text-lg ${(eventData.score || 0) >= 3 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          +{eventData.score || 0}
+                        </span>
                       </div>
-                      <span className={`font-bold ${(item.score || 0) >= 3 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                        +{item.score || 0}
-                      </span>
+                      
+                      {/* Chi tiết từng criterion */}
+                      {eventData.scores && eventData.scores.length > 0 && (
+                        <div className="space-y-2">
+                          {eventData.scores.map((criterion, idx) => (
+                            <div key={idx} className="bg-slate-900/50 rounded p-2">
+                              <div className="flex justify-between items-start mb-1">
+                                <span className="text-slate-300 text-sm font-medium flex-1">
+                                  {criterion.criterion}
+                                </span>
+                                <span className={`text-sm font-bold ml-2 ${(criterion.score || 0) >= 3 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                  {criterion.score}/5
+                                </span>
+                              </div>
+                              {criterion.analysis && (
+                                <p className="text-slate-400 text-xs mt-1 italic border-l-2 border-slate-600 pl-2">
+                                  💡 {criterion.analysis}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
+                
                 {/* Tổng điểm */}
-                <div className="mt-3 pt-3 border-t border-slate-600 flex justify-between font-bold">
+                <div className="mt-4 pt-3 border-t border-slate-600 flex justify-between font-bold text-lg">
                   <span className="text-white">Tổng cộng:</span>
-                  <span className={isSuccess ? 'text-emerald-400' : 'text-rose-400'}>{score}</span>
+                  <span className={isSuccess ? 'text-emerald-400' : 'text-rose-400'}>{score} / {maxScore}</span>
                 </div>
               </div>
             )}
@@ -635,23 +665,32 @@ export default function CaseRunner() {
                 </h2>
                 <div className="text-center mb-4">
                   <div className="text-5xl font-bold text-emerald-400">{totalScore}</div>
-                  <p className="text-slate-400 text-sm mt-1">điểm</p>
+                  <p className="text-slate-400 text-sm mt-1">điểm ({eventCount} event)</p>
                 </div>
                 
-                {/* Lịch sử điểm gần nhất */}
-                {scoreHistory.length > 0 && (
-                  <div className="bg-slate-900/50 rounded-lg p-3 max-h-32 overflow-y-auto">
-                    <p className="text-xs text-slate-400 mb-2 font-semibold">Lịch sử ({scoreHistory.length} event):</p>
-                    {scoreHistory.slice(-3).reverse().map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-xs py-1.5 border-b border-slate-700/50 last:border-0">
-                        <span className="text-slate-300 truncate max-w-[150px]">{item.eventTitle}</span>
-                        <span className="text-emerald-400 font-semibold">+{item.score}</span>
+                {/* Điểm từng event */}
+                {eventCount > 0 && (
+                  <div className="bg-slate-900/50 rounded-lg p-3 max-h-40 overflow-y-auto">
+                    <p className="text-xs text-slate-400 mb-2 font-semibold">Chi tiết điểm:</p>
+                    {Object.entries(eventScores).map(([eventId, eventData]) => (
+                      <div key={eventId} className="mb-2 last:mb-0">
+                        <div className="flex justify-between text-xs py-1 border-b border-slate-700/50">
+                          <span className="text-slate-300 font-medium">{eventId}</span>
+                          <span className="text-emerald-400 font-semibold">+{eventData.score}</span>
+                        </div>
+                        {/* Phân tích ngắn gọn */}
+                        {eventData.scores && eventData.scores.length > 0 && (
+                          <div className="text-xs text-slate-500 italic pl-2 mt-1">
+                            {eventData.scores[0].analysis?.substring(0, 50)}
+                            {eventData.scores[0].analysis?.length > 50 ? '...' : ''}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
                 
-                {scoreHistory.length === 0 && (
+                {eventCount === 0 && (
                   <p className="text-xs text-slate-500 italic text-center">Chưa có điểm nào</p>
                 )}
               </section>

@@ -1,39 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import NavBar from '../../components/NavBar';
 import Footer from '../../components/Footer';
 import { backgroundImage2 } from '../../Image/image';
 
 export default function User() {
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
+  const [histories, setHistories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
 
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchHistories() {
       setLoading(true);
       setErr('');
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:8000/api/user', {
+        const res = await fetch('http://localhost:8000/api/sessions/history', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.message || 'Lỗi lấy danh sách user');
+          throw new Error(data.message || 'Lỗi lấy lịch sử case');
         }
         const data = await res.json();
-        setUsers(data);
+        setHistories(data);
       } catch (e) {
         setErr(e.message);
       } finally {
         setLoading(false);
       }
     }
-    fetchUsers();
+    fetchHistories();
   }, []);
 
   const handleLogout = () => {
@@ -43,7 +42,6 @@ export default function User() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <NavBar />
       <main className="flex-1 text-slate-200"
         style={{
           backgroundImage: `linear-gradient(rgba(20,30,50,0.85), rgba(20,30,50,0.95)), url(${backgroundImage2})`,
@@ -77,12 +75,12 @@ export default function User() {
           {/* Main Grid */}
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Left Column: Quick Actions */}
-            <div className="flex flex-col gap-8">
-              {/* Total Users Widget */}
+            <div className="flex flex-col gap-8 lg:col-span-1">
+              {/* Total Cases Widget */}
               <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-6 shadow-lg">
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Thống kê</h3>
-                <p className="mt-2 text-4xl font-black text-white">{users.length}</p>
-                <p className="text-slate-300">Người dùng trong hệ thống</p>
+                <p className="mt-2 text-4xl font-black text-white">{histories.length}</p>
+                <p className="text-slate-300">Case đã hoàn thành</p>
               </div>
 
               {/* Quick Actions */}
@@ -98,7 +96,7 @@ export default function User() {
 
             {/* Right Column: User List */}
             <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-6 shadow-lg lg:col-span-2">
-              <h2 className="text-2xl font-bold text-white mb-6">👥 Danh sách người dùng</h2>
+              <h2 className="text-2xl font-bold text-white mb-6">📖 Lịch sử làm Case</h2>
               {loading && (
                 <div className="flex justify-center items-center h-48">
                   <svg className="animate-spin h-8 w-8 text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -115,32 +113,39 @@ export default function User() {
               )}
               {!loading && !err && (
                 <div className="space-y-4">
-                  {users.map((user) => (
-                    <div key={user.id} className="flex items-center gap-4 rounded-lg bg-slate-900/50 p-4 transition-colors hover:bg-slate-700/50">
-                      {/* Avatar */}
-                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-slate-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                  {histories.map((history) => (
+                    <Link 
+                      to={`/history/${history.sessionId}`} 
+                      key={history.sessionId} 
+                      className="group flex items-center gap-4 rounded-lg bg-slate-900/50 p-4 transition-all duration-200 hover:bg-slate-700/50 hover:ring-2 hover:ring-primary-500"
+                    >
+                      {/* Icon */}
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-slate-700 group-hover:bg-primary-600/50">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
-                      {/* User Info */}
+                      {/* History Info */}
                       <div className="flex-1">
-                        <p className="font-semibold text-white">{user.name}</p>
-                        <p className="text-sm text-slate-400">{user.email}</p>
+                        <p className="font-semibold text-white">Case ID: {history.caseId}</p>
+                        <p className="text-sm text-slate-400">
+                          Ngày làm: {new Date(history.createdAt).toLocaleString('vi-VN')}
+                        </p>
                       </div>
-                      {/* User ID */}
+                      {/* Score */}
                       <div className="text-right">
-                        <span className="rounded-full bg-slate-700 px-3 py-1 text-xs font-medium text-slate-300">
-                          ID: {user.id}
+                        <p className="text-sm text-slate-400">Điểm</p>
+                        <span className="text-2xl font-bold text-emerald-400">
+                          {history.finalScore}
                         </span>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
-              {!loading && !err && users.length === 0 && (
+              {!loading && !err && histories.length === 0 && (
                 <div className="text-center py-12">
-                  <p className="text-slate-400">Không tìm thấy người dùng nào.</p>
+                  <p className="text-slate-400">Bạn chưa hoàn thành case nào.</p>
                 </div>
               )}
             </div>

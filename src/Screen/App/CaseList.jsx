@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import NavBar from '../../components/NavBar'
 import Footer from '../../components/Footer'
+import NavBar from '../../components/NavBar'
 import { backgroundImage2 } from '../../Image/image'
 
 const ConveyorBelt = ({ cases, onCaseClick }) => {
@@ -84,7 +84,6 @@ export default function CaseList() {
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
-        <NavBar />
         <div className="flex-1 bg-slate-900 flex items-center justify-center">
           <div className="text-center text-lg text-slate-400">Đang tải danh sách tình huống...</div>
         </div>
@@ -96,7 +95,6 @@ export default function CaseList() {
   if (error) {
     return (
       <div className="flex flex-col min-h-screen">
-        <NavBar />
         <div className="flex-1 bg-slate-900 flex items-center justify-center">
           <div className="max-w-2xl mx-auto px-4 py-8">
             <div className="bg-red-900/50 border-2 border-red-500 rounded-lg p-6 text-center">
@@ -112,7 +110,7 @@ export default function CaseList() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <NavBar />
+      {!token && <NavBar />} {/* Chỉ hiển thị NavBar nếu chưa đăng nhập */}
       <div 
         className="flex-1"
         style={{

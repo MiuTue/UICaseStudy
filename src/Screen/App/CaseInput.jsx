@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
-import NavBar from "../../components/NavBar";
+import React, { useState, useEffect, useMemo } from "react";
 import Footer from "../../components/Footer";
-import { backgroundImage2 } from "../../Image/image";
+import { backgroundImage2 } from "../../Image/image"; 
 import { storage, firestore } from "../../../firebase"; // Import firestore
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, setDoc } from "firebase/firestore"; // Import firestore functions
+import ReactFlow, { Background, Controls, MiniMap } from 'reactflow';
+import '@reactflow/core/dist/style.css';
 
 
 // Hàm tải ảnh lên Firebase Storage
@@ -312,22 +313,109 @@ export default function CaseInput() {
           // This logic mimics the normalization in nhap-case.js
           if (type === "skeleton") {
             const skeletonData = data.skeleton || data;
-            setSkeleton(prev => ({ ...prev, ...skeletonData }));
+
+            // Normalize dữ liệu giống như khi sinh case tự động
+            if (Array.isArray(skeletonData.canon_events)) {
+              skeletonData.canon_events.forEach(event => {
+                // 1. Chuẩn hóa npc_appearance từ mảng object sang chuỗi
+                if (Array.isArray(event.npc_appearance)) {
+                  event.npc_appearance = event.npc_appearance.map(npc => {
+                    if (npc && npc.persona_id) {
+                      return npc.role ? `${npc.persona_id}: ${npc.role}` : npc.persona_id;
+                    }
+                    return '';
+                  }).filter(Boolean).join('\n');
+                }
+
+                // 2. Chuẩn hóa success_criteria.levels từ mảng object sang object
+                if (Array.isArray(event.success_criteria)) {
+                  event.success_criteria.forEach(criterion => {
+                    if (Array.isArray(criterion.levels)) {
+                      const levelsObject = criterion.levels.reduce((acc, level) => {
+                        if (level && typeof level.score !== 'undefined') {
+                          acc[level.score] = level.descriptor || "";
+                        }
+                        return acc;
+                      }, {});
+                      criterion.levels = levelsObject;
+                    } else if (!criterion.levels) {
+                      criterion.levels = SUCCESS_LEVEL_SCORES.reduce((acc, score) => ({ ...acc, [score]: "" }), {});
+                    }
+                  });
+                }
+
+                // 3. Đảm bảo on_score_branches tồn tại và điền dữ liệu từ on_success/on_fail
+                if (!event.on_score_branches) {
+                  event.on_score_branches = SUCCESS_LEVEL_SCORES.reduce((acc, score) => ({ ...acc, [score]: "" }), {});
+                }
+                if (event.on_success) {
+                  [5, 4, 3].forEach(score => { if (!event.on_score_branches[score]) event.on_score_branches[score] = event.on_success; });
+                }
+                if (event.on_fail) {
+                  [2, 1].forEach(score => { if (!event.on_score_branches[score]) event.on_score_branches[score] = event.on_fail; });
+                }
+              });
+            }
+            setSkeleton(prev => ({ ...getInitialSkeletonState(), ...prev, ...skeletonData }));
           }
           if (type === "context") {
             const contextData = data.context || data;
-            setContext(prev => ({ ...prev, ...contextData }));
+            const initialContext = contextData.initial_context || {};
+
+            // Giải nén 'resources' từ 'available_resources' và 'available_resources_meta'
+            const unpackedResources = [];
+            if (initialContext.available_resources && typeof initialContext.available_resources === 'object') {
+              Object.keys(initialContext.available_resources).forEach(key => {
+                const meta = initialContext.available_resources_meta?.[key] || {};
+                const items = initialContext.available_resources[key];
+                unpackedResources.push({
+                  label: meta.label || key,
+                  note: meta.note || '',
+                  items: Array.isArray(items) ? items.join('\n') : (items || ''),
+                });
+              });
+            }
+
+            // Chuyển đổi các trường mảng thành chuỗi ký tự, mỗi phần tử một dòng
+            const constraintsStr = Array.isArray(initialContext.constraints) ? initialContext.constraints.join('\n') : (initialContext.constraints || '');
+            const policiesStr = Array.isArray(initialContext.policies_safety_legal) ? initialContext.policies_safety_legal.join('\n') : (initialContext.policies_safety_legal || '');
+
+            const newContext = {
+              ...getInitialContextState(), // Bắt đầu với state rỗng để đảm bảo sạch sẽ
+              case_id: contextData.case_id || '',
+              topic: contextData.topic || '',
+              scene: initialContext.scene || { time: "", weather: "", location: "", noise: "" },
+              index_event: initialContext.index_event || { summary: "", current_state: "", who_first: "" },
+              constraints: constraintsStr,
+              policies: policiesStr,
+              handover: initialContext.handover_target || '',
+              success_state: initialContext.success_end_state || '',
+              background_image: initialContext.background_image || '',
+              resources: unpackedResources.length > 0 ? unpackedResources : getInitialContextState().resources,
+            };
+            setContext(newContext);
           }
           if (type === "personas") {
             let personasData = {};
             if (data.personas && Array.isArray(data.personas.personas)) {
-              personasData = data.personas;
+              personasData = data.personas; // Dữ liệu đã có cấu trúc { case_id, count, personas: [...] }
             } else if (Array.isArray(data.personas)) {
-              personasData = { personas: data.personas, count: data.personas.length };
+              personasData = { case_id: data.case_id, personas: data.personas, count: data.personas.length };
             } else {
               personasData = data;
             }
-            setPersonas(prev => ({ ...prev, ...personasData }));
+            // Chuẩn hóa dữ liệu mảng sang chuỗi
+            if (Array.isArray(personasData.personas)) {
+              personasData.personas.forEach(persona => {
+                if (Array.isArray(persona.emotion_during)) {
+                  persona.emotion_during = persona.emotion_during.join('\n');
+                }
+                if (Array.isArray(persona.voice_tags)) {
+                  persona.voice_tags = persona.voice_tags.join(', ');
+                }
+              });
+            }
+            setPersonas(prev => ({ ...getInitialPersonasState(), ...prev, ...personasData }));
           }
           alert(`Đã tải thành công file ${file.name}`);
         } catch (error) {
@@ -582,12 +670,12 @@ export default function CaseInput() {
             }
             // Ensure on_score_branches exists and apply defaults if needed
             if (!event.on_score_branches) {
-              event.on_score_branches = {};
-              if (!event.on_success && !event.on_fail) {
-                event.on_score_branches[3] = "Default Success";
-                event.on_score_branches[2] = "Default Fail";
-              }
+              event.on_score_branches = SUCCESS_LEVEL_SCORES.reduce((acc, score) => ({ ...acc, [score]: "" }), {});
             }
+            // If on_success/on_fail exist, they can be used to populate branches as a fallback
+            // This logic is now more robust to handle various draft structures.
+            if (event.on_success) event.on_score_branches[3] = event.on_score_branches[3] || event.on_success;
+            if (event.on_fail) event.on_score_branches[2] = event.on_score_branches[2] || event.on_fail;
           });
         }
 
@@ -773,7 +861,6 @@ export default function CaseInput() {
 
   return (
     <div className="min-h-screen">
-      <NavBar/>
       <div className="relative flex min-h-screen flex-col" 
          style={{
                   backgroundImage: `linear-gradient(rgba(20,30,50,0.85), rgba(20,30,50,0.95)), url(${backgroundImage2})`,
@@ -870,34 +957,36 @@ export default function CaseInput() {
 
           {/* Tabs and Panels Section */}
           <section className="space-y-8">
-            <div className="flex flex-wrap gap-3" role="tablist">
-              {["skeleton", "context", "personas"].map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setActiveTab(tab)}
-                  className={`rounded-full border px-5 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-200 ${
-                    activeTab === tab
-                      ? "border-transparent bg-primary-600 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-500"
-                      : "border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600 hover:bg-slate-700/70 hover:text-white"
-                  }`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex flex-wrap gap-3" role="tablist">
+                {["skeleton", "context", "personas", "flow"].map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    className={`rounded-full border px-5 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-200 ${
+                      activeTab === tab
+                        ? "border-transparent bg-primary-600 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-500"
+                        : "border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600 hover:bg-slate-700/70 hover:text-white"
+                    }`}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleSaveCase}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-transform duration-200 hover:scale-105 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-400 disabled:opacity-60"
+              >
+                Lưu Toàn Bộ Case
+              </button>
             </div>
 
             <div className="rounded-3xl border border-slate-700 bg-slate-800/50 backdrop-blur-xl p-6 sm:p-8 shadow-2xl shadow-black/20">
               {/* Skeleton Panel */}
               <section hidden={activeTab !== "skeleton"} className="space-y-8">
-                <header className="space-y-1">
-                  <h2 className="text-2xl font-bold text-white">
-                    Skeleton
-                  </h2>
-                  <p className="text-sm text-slate-300">
-                    Thông tin tổng quan và danh sách Canon Event.
-                  </p>
-                </header>
+                <header className="space-y-1"><h2 className="text-2xl font-bold text-white">Skeleton</h2><p className="text-sm text-slate-300">Thông tin tổng quan và danh sách Canon Event.</p></header>
                 <form className="space-y-8">
                   {/* Basic Skeleton Fields */}
                   <div className="grid gap-6 md:grid-cols-2" data-basic-fields="skeleton">
@@ -975,10 +1064,10 @@ export default function CaseInput() {
                               <button type="button" onClick={() => handleResetBranches(eventIndex)} className="text-xs font-semibold text-primary-600 transition hover:text-primary-500 focus:outline-none">Xóa nhánh</button>
                             </div>
                             <div className="space-y-2">
-                              {SUCCESS_LEVEL_SCORES.map(score => (
+                              {SUCCESS_LEVEL_SCORES.map((score) => (
                                 <label key={score} className="block space-y-1 rounded-lg border border-slate-700 bg-slate-800/50 p-3">
                                   <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">Điểm {score}</span>
-                                  <textarea rows="2" value={event.on_score_branches?.[score] || ''} onChange={(e) => handleBranchChange(e, eventIndex, score)} placeholder={`Nhánh kế tiếp khi đạt điểm ${score}.`} className="w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea>
+                                  <input type="text" value={event.on_score_branches?.[score] || ''} onChange={(e) => handleBranchChange(e, eventIndex, score)} placeholder={`Nhánh kế tiếp khi đạt điểm ${score}.`} className="w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
                                 </label>
                               ))}
                             </div>
@@ -1140,6 +1229,17 @@ export default function CaseInput() {
                 </form>
               </section>
 
+              {/* Flow Panel */}
+                <section hidden={activeTab !== "flow"} className="space-y-8">
+                  <header className="space-y-1">
+                    <h2 className="text-2xl font-bold text-white">Sơ đồ luồng sự kiện (Event Flow Diagram)</h2>
+                    <p className="text-sm text-slate-300">Trực quan hóa các nhánh rẽ giữa các Canon Event. Bạn có thể kéo thả các khối để sắp xếp lại.</p>
+                  </header>
+                  <div style={{ height: '600px' }} className="rounded-2xl border border-slate-700 bg-slate-900/50 shadow-inner">
+                    <FlowDiagram skeleton={skeleton} />
+                  </div>
+                </section>
+
               {/* Personas Panel */}
               <section hidden={activeTab !== "personas"} className="space-y-8">
                 <header className="space-y-1">
@@ -1189,22 +1289,7 @@ export default function CaseInput() {
                       ))}
                     </div>
                   </div>
-                  <div className="flex flex-wrap justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("context")}
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-600 px-5 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-slate-500"
-                    >
-                      ← Về Context
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSaveCase}
-                      className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-400 disabled:opacity-60"
-                    >
-                      Lưu case
-                    </button>
-                  </div>
+
                 </form>
               </section>
             </div>
@@ -1325,3 +1410,155 @@ export default function CaseInput() {
     </div>
   );
 }
+
+const FlowDiagram = ({ skeleton }) => { 
+  const { nodes, edges } = useMemo(() => {
+    const initialNodes = [];
+    const initialEdges = [];
+    const nodeWidth = 250;
+    const nodeHeight = 150;
+    const horizontalGap = 100;
+    const verticalGap = 100;
+
+    const eventIds = skeleton.canon_events.map(event => event.id).filter(Boolean);
+    const lastEvent = skeleton.canon_events.length > 0 ? skeleton.canon_events[skeleton.canon_events.length - 1] : null;
+    let finishNodeId = 'finish-node';
+    if (lastEvent && lastEvent.id) {
+      const match = lastEvent.id.match(/(\d+)$/);
+      if (match) {
+        const nextIdNum = parseInt(match[1], 10) + 1;
+        finishNodeId = `CE${nextIdNum}`;
+      }
+    }
+
+    let maxNodeY = 0;
+
+    skeleton.canon_events.forEach((event, index) => {
+      initialNodes.push({
+        id: event.id || `node-${index}`,
+        position: { x: (nodeWidth + horizontalGap) * (index % 3), y: (nodeHeight + verticalGap) * Math.floor(index / 3) },
+        data: { label: (
+          <div className="p-2 text-left">
+            <div className="font-bold text-base text-white bg-primary-600 -m-2 p-2 rounded-t-lg">{event.id || `Event #${index + 1}`}</div>
+            <div className="p-2">
+              <div className="text-sm text-slate-200 mb-2">{event.title || '(Chưa có tiêu đề)'}</div>
+              {/* Hiển thị các nhánh retry hoặc không nối được */}
+              {Object.entries(event.on_score_branches || {}).map(([score, targetId]) => {
+                const isRetry = parseInt(score, 10) <= 2;                
+                return isRetry ? (
+                  <div key={score} className="text-xs mt-1 p-1 bg-rose-500/20 rounded-md border border-rose-500/30">
+                    <span className="font-bold text-rose-300">
+                      🔄 Điểm {score} ➜
+                    </span>{' '}
+                    <span className="text-rose-400 italic">
+                      {targetId || '(không có đích)'}
+                    </span>
+                  </div>
+                ) : null
+              })}
+            </div>
+          </div>
+        )},
+        style: { 
+          background: '#1e293b', // slate-800,
+          color: '#f1f5f9', // slate-100
+          border: '1px solid #475569', // slate-600
+          borderRadius: '10px',
+          width: nodeWidth,
+        },
+      });
+      
+      if (initialNodes[initialNodes.length - 1].position.y > maxNodeY) {
+        maxNodeY = initialNodes[initialNodes.length - 1].position.y;
+      }
+
+      if (event.on_score_branches && event.id) {
+        // Nhóm các điểm số theo targetId
+        const branchesByTarget = Object.entries(event.on_score_branches).reduce((acc, [rawScore, targetId]) => {
+          if (targetId && eventIds.includes(targetId)) {
+            const score = parseInt(rawScore, 10);
+            if (!acc[targetId]) {
+              acc[targetId] = { success: [], retry: [] };
+            }
+            if (score <= 2) {
+              acc[targetId].retry.push(score);
+            } else {
+              acc[targetId].success.push(score);
+            }
+          }
+          // Xử lý trường hợp event cuối cùng có nhánh pass không trỏ đi đâu
+          else if (targetId && !eventIds.includes(targetId) && event.id === lastEvent?.id) {
+            const score = parseInt(rawScore, 10);
+            if (score > 2) { // Chỉ xét nhánh pass
+              if (!acc[finishNodeId]) {
+                acc[finishNodeId] = { success: [], retry: [] };
+              }
+              acc[finishNodeId].success.push(score);
+            }
+          }
+          return acc;
+        }, {});
+
+        // Tạo một edge cho mỗi nhóm target
+        Object.entries(branchesByTarget).forEach(([targetId, scoreGroups]) => { 
+          const hasSuccessEdge = scoreGroups.success.length > 0;
+
+          // Xử lý nhánh thành công (Success)
+          if (hasSuccessEdge) {
+            const sortedScores = scoreGroups.success.sort((a, b) => b - a).join(', ');
+            const label = `Điểm ${sortedScores}`;
+            const finalTargetId = eventIds.includes(targetId) ? targetId : finishNodeId;
+
+            initialEdges.push({
+              id: `e-${event.id}-${finalTargetId}-success`,
+              source: event.id,
+              target: finalTargetId,
+              label: label,
+              type: 'smoothstep',
+              animated: true,
+              style: { stroke: '#34d399', strokeWidth: 2 }, // emerald-400
+              labelStyle: { fill: '#f1f5f9', fontWeight: 'bold' },
+              labelBgStyle: { fill: '#1e293b', fillOpacity: 0.8, padding: '4px 6px', borderRadius: '4px' },
+              markerEnd: { type: 'arrowclosed', color: '#34d399' },
+            });
+          }
+        });
+      }
+    });
+
+    // Thêm node Kết thúc
+    initialNodes.push({
+      id: finishNodeId,
+      position: { x: nodeWidth + horizontalGap, y: maxNodeY + nodeHeight + verticalGap },
+      data: { 
+        label: (
+          <div className="p-4 text-center">
+            <div className="font-bold text-lg text-white">{finishNodeId}</div>
+            <div className="text-base font-bold text-slate-200">Kết thúc</div>
+          </div>
+        )
+      },
+      style: {
+        background: '#0f172a', // slate-900
+        color: '#f1f5f9',
+        border: '2px dashed #475569', // slate-600
+        borderRadius: '50%',
+        width: 120,
+        height: 120,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+    });
+
+    return { nodes: initialNodes, edges: initialEdges };
+  }, [skeleton]);
+
+  return (
+    <ReactFlow nodes={nodes} edges={edges} fitView>
+      <Background color="#475569" gap={16} />
+      <Controls />
+      <MiniMap nodeColor={n => n.style?.background || '#1e293b'} />
+    </ReactFlow>
+  );
+};

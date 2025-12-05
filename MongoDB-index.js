@@ -39,6 +39,22 @@ const userSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', userSchema, 'member');
 
+// ==== CHAT HISTORY SCHEMA với collection là chat_histories ====
+const messageSchema = new mongoose.Schema({
+    sender: { type: String, required: true },
+    text: { type: String, required: true },
+    speakerName: { type: String },
+}, { _id: false });
+
+const chatHistorySchema = new mongoose.Schema({
+    sessionId: { type: String, required: true, unique: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    caseId: { type: String, required: true },
+    messages: { type: [messageSchema], default: [] },
+    finalScore: { type: Number, default: 0 },
+    finalState: { type: Object }, // Lưu toàn bộ state cuối cùng từ agent
+}, { collection: 'chat_histories', timestamps: true });
+
 // ==== CASE SCHEMA với collection là contexts ====
 const caseContextSchema = new mongoose.Schema({
     case_id: { type: String, required: true, unique: true },
@@ -349,6 +365,90 @@ app.post('/api/reset-password', async (req, res) => {
         res.status(500).json({ message: 'Lỗi hệ thống', error: err.message });
     }
 });
+
+// === API SAVE CHAT HISTORY ===
+// Endpoint này sẽ được gọi từ frontend khi một session kết thúc
+app.post('/api/sessions/history', authenticateToken, async (req, res) => {
+    const { sessionId, caseId, messages, finalScore, finalState } = req.body;
+    const userId = req.user.userId; // Lấy từ middleware authenticateToken
+
+    if (!sessionId || !caseId || !messages) {
+        return res.status(400).json({ message: 'sessionId, caseId, và messages là bắt buộc' });
+    }
+
+    try {
+        // Sử dụng DB 'User' để lưu lịch sử chat
+        const userDb = mongoose.connection.useDb('User');
+        const ChatHistory = userDb.model('ChatHistory', chatHistorySchema);
+
+        // upsert: true sẽ tạo mới nếu không tìm thấy, hoặc cập nhật nếu đã tồn tại
+        const history = await ChatHistory.findOneAndUpdate(
+            { sessionId: sessionId },
+            {
+                sessionId,
+                userId,
+                caseId,
+                messages,
+                finalScore,
+                finalState,
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        res.status(201).json({ message: 'Lịch sử trò chuyện đã được lưu thành công.', data: history });
+    } catch (err) {
+        console.error('Error in /api/sessions/history:', err);
+        res.status(500).json({ message: 'Lỗi khi lưu lịch sử trò chuyện', error: err.message });
+    }
+});
+
+// === API GET ALL CHAT HISTORIES FOR A USER ===
+app.get('/api/sessions/history', authenticateToken, async (req, res) => {
+    const userId = req.user.userId;
+
+    try {
+        const userDb = mongoose.connection.useDb('User');
+        const ChatHistory = userDb.model('ChatHistory', chatHistorySchema);
+
+        // Tìm tất cả lịch sử của người dùng, sắp xếp theo ngày tạo mới nhất
+        const histories = await ChatHistory.find({ userId: userId })
+            .sort({ createdAt: -1 })
+            .select('sessionId caseId finalScore createdAt'); // Chỉ lấy các trường cần thiết cho danh sách
+
+        res.json(histories);
+    } catch (err) {
+        console.error('Error in GET /api/sessions/history:', err);
+        res.status(500).json({ message: 'Lỗi khi lấy lịch sử trò chuyện', error: err.message });
+    }
+});
+
+// === API GET A SINGLE CHAT HISTORY BY SESSION ID ===
+app.get('/api/sessions/history/:sessionId', authenticateToken, async (req, res) => {
+    const { sessionId } = req.params;
+    const userId = req.user.userId;
+
+    try {
+        const userDb = mongoose.connection.useDb('User');
+        const ChatHistory = userDb.model('ChatHistory', chatHistorySchema);
+
+        const history = await ChatHistory.findOne({ sessionId: sessionId });
+
+        if (!history) {
+            return res.status(404).json({ message: 'Không tìm thấy lịch sử cho session này.' });
+        }
+
+        // Bảo mật: Đảm bảo người dùng chỉ có thể xem lịch sử của chính mình
+        if (history.userId.toString() !== userId) {
+            return res.status(403).json({ message: 'Bạn không có quyền truy cập vào lịch sử này.' });
+        }
+
+        res.json(history);
+    } catch (err) {
+        console.error(`Error in GET /api/sessions/history/${sessionId}:`, err);
+        res.status(500).json({ message: 'Lỗi khi lấy chi tiết lịch sử', error: err.message });
+    }
+});
+
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

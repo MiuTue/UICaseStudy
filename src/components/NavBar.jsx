@@ -38,13 +38,7 @@ export default function NavBar() {
             
           </nav>
           </>
-          ) : (
-            <> <nav className="hidden items-center gap-8 text-sm font-medium text-slate-700 md:flex">
-            <NavLink to="/user" className={navLinkClass}>Trang Chính</NavLink>
-            <NavLink to="/case-list" className={navLinkClass}>Danh sách Case</NavLink>
-            <NavLink to="/case-input" className={navLinkClass}>Nhập Case</NavLink>
-          </nav></>
-          )}
+          ) : null}
 
           {/* Auth Buttons */}
           <div className="flex items-center gap-3">

@@ -12,7 +12,7 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-600 text-lg font-semibold text-white">
-                📋
+                TAT
               </div>
               <div>
                 <h3 className="text-white font-semibold">Case Study TAT</h3>

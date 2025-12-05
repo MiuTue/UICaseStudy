@@ -1,8 +1,9 @@
-import React from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import React, { useState } from 'react'
+import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom'
 import Home from './Screen/Auth/Home'
+import SideBar from './components/SideBar' // Import SideBar
+import HistoryDetail from './Screen/App/HistroryDetail'
 import CaseList from './Screen/App/CaseList'
-import CaseDetail from './Screen/App/CaseDetail'
 import Login from './Screen/Auth/Login'
 import Register from './Screen/Auth/Register'
 import ForgotPassword from './Screen/Auth/ForgotPassword'
@@ -28,26 +29,41 @@ function RejectIfAuth({ children }) {
   return children;
 }
 
-export default function App() {
-  return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      <main className="flex-1">
-        <Routes>
-          {/* Các route App - yêu cầu đăng nhập */}
-          <Route path="/user" element={<RequireAuth><User /></RequireAuth>} />
-          <Route path="/case-list" element={<RequireAuth><CaseList /></RequireAuth>} />
-          <Route path="/case/:caseId/*" element={<RequireAuth><CaseDetail /></RequireAuth>} />
-          <Route path="/case-runner/:caseId/*" element={<RequireAuth><CaseRunner /></RequireAuth>} />
-          <Route path="/case-input" element={<RequireAuth><CaseInput /></RequireAuth>} />
+// Layout cho các trang sau khi đăng nhập
+function AuthenticatedLayout() {
+  const [isCollapsed, setCollapsed] = useState(false);
 
-          {/* Các route Auth, Home - không cho vào nếu đã đăng nhập */}
-          <Route path="/case-home" element={<RejectIfAuth><CaseList /></RejectIfAuth>} />
-          <Route path="/" element={<RejectIfAuth><Home /></RejectIfAuth>} />
-          <Route path="/login" element={<RejectIfAuth><Login /></RejectIfAuth>} />
-          <Route path="/register" element={<RejectIfAuth><Register /></RejectIfAuth>} />
-          <Route path="/forgot-password" element={<RejectIfAuth><ForgotPassword /></RejectIfAuth>} />
-        </Routes>
+  return (
+    <div className="flex">
+      <SideBar isCollapsed={isCollapsed} setCollapsed={setCollapsed} />
+      {/* Nội dung chính sẽ được đẩy sang phải để không bị che bởi sidebar */}
+      <main 
+        className="flex-1 transition-all duration-300 ease-in-out" 
+        style={{ marginLeft: isCollapsed ? '80px' : '250px' }}>
+        <Outlet /> {/* Đây là nơi các component con (User, CaseList,...) sẽ được render */}
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      {/* Các route App - yêu cầu đăng nhập, sử dụng AuthenticatedLayout */}
+      <Route element={<RequireAuth><AuthenticatedLayout /></RequireAuth>}>
+        <Route path="/user" element={<User />} />
+        <Route path="/case-list" element={<CaseList />} />
+        <Route path="/history/:sessionId" element={<HistoryDetail />} />
+        <Route path="/case-runner/:caseId/*" element={<CaseRunner />} />
+        <Route path="/case-input" element={<CaseInput />} />
+      </Route>
+
+      {/* Các route Auth, Home - không cho vào nếu đã đăng nhập */}
+      <Route path="/case-home" element={<RejectIfAuth><CaseList /></RejectIfAuth>} />
+      <Route path="/" element={<RejectIfAuth><Home /></RejectIfAuth>} />
+      <Route path="/login" element={<RejectIfAuth><Login /></RejectIfAuth>} />
+      <Route path="/register" element={<RejectIfAuth><Register /></RejectIfAuth>} />
+      <Route path="/forgot-password" element={<RejectIfAuth><ForgotPassword /></RejectIfAuth>} />
+    </Routes>
   )
 }

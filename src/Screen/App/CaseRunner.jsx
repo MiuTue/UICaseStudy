@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import Footer from "../../components/Footer";
 import { backgroundImage } from "../../Image/image";
 import { backgroundImage2 } from "../../Image/image"; // Import ảnh nền mới
-import { firestore } from "../../../firebase";
+import { firestore } from "../../config/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
 const ChatMessage = ({ message, personas }) => {
@@ -34,13 +34,12 @@ const ChatMessage = ({ message, personas }) => {
       style={{ animation: 'slide-up-fade-in 0.4s cubic-bezier(0.4,0,0.2,1) forwards' }}
     >
       <div
-        className={`max-w-lg rounded-2xl px-4 py-2.5 ${
-          getSenderColor(message.sender)
-        }`}
+        className={`max-w-lg rounded-2xl px-4 py-2.5 ${getSenderColor(message.sender)
+          }`}
       >
         <p className="text-sm font-semibold">{senderName}</p>
         {senderRole && <p className="text-xs opacity-70 -mt-0.5 mb-1">{senderRole}</p>}
-        
+
         <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{message.text}</p>
       </div>
       {/* Animation CSS (can move into global styles) */}
@@ -82,7 +81,7 @@ export default function CaseRunner() {
   const hasFetched = useRef(false); // Thêm một ref để theo dõi việc fetch
   const [backgroundUrl, setBackgroundUrl] = useState(backgroundImage); // State cho ảnh nền
   const hasSavedHistory = useRef(false); // Ref để đảm bảo chỉ lưu lịch sử một lần
-  
+
   // State lưu điểm và phân tích theo từng event
   // eventScores = { "CE1": { score: 5, scores: [...], analysis: [...] }, "CE2": { ... } }
   const [cumulativeScore, setCumulativeScore] = useState(0); // State mới để cộng dồn điểm
@@ -95,7 +94,7 @@ export default function CaseRunner() {
 
     setLoading(true);
     setError(null);
-    
+
     // Đánh dấu là đã bắt đầu fetch
     hasFetched.current = true;
 
@@ -140,52 +139,52 @@ export default function CaseRunner() {
           },
           body: JSON.stringify(startSessionPayload),
         })
-        .then(response => response.json())
-        .then(sessionData => {
-          console.log('Session started successfully:', sessionData);
-          // 3. Lưu session_id và state trả về từ API
-          setSessionId(sessionData.session_id);
-          setSessionState(sessionData.state);
-          
-          // Khởi tạo previousEventRef với event đầu tiên
-          if (sessionData.state?.current_event) {
-            previousEventRef.current = sessionData.state.current_event;
-          } 
+          .then(response => response.json())
+          .then(sessionData => {
+            console.log('Session started successfully:', sessionData);
+            // 3. Lưu session_id và state trả về từ API
+            setSessionId(sessionData.session_id);
+            setSessionState(sessionData.state);
 
-          // 4. Hiển thị tin nhắn từ dialogue_history
-          if (sessionData.state && Array.isArray(sessionData.state.dialogue_history)) {
-            // Lấy object active_personas từ state và chuyển thành mảng
-            const activePersonasObject = sessionData.state.active_personas || {};
-            const allActivePersonas = Object.values(activePersonasObject);
-            const initialMessages = sessionData.state.dialogue_history.map((dialogue, index) => {
-              let senderId = 'system';
-              let speakerName = dialogue.speaker; // Lưu lại tên gốc
-              if (dialogue.speaker === 'user') {
-                senderId = 'user';
-              } else {
-                // Tìm persona ID dựa trên tên của speaker
-                const foundPersona = allActivePersonas.find(p => p.name === dialogue.speaker);
-                if (foundPersona) {
-                  senderId = foundPersona.id;
+            // Khởi tạo previousEventRef với event đầu tiên
+            if (sessionData.state?.current_event) {
+              previousEventRef.current = sessionData.state.current_event;
+            }
+
+            // 4. Hiển thị tin nhắn từ dialogue_history
+            if (sessionData.state && Array.isArray(sessionData.state.dialogue_history)) {
+              // Lấy object active_personas từ state và chuyển thành mảng
+              const activePersonasObject = sessionData.state.active_personas || {};
+              const allActivePersonas = Object.values(activePersonasObject);
+              const initialMessages = sessionData.state.dialogue_history.map((dialogue, index) => {
+                let senderId = 'system';
+                let speakerName = dialogue.speaker; // Lưu lại tên gốc
+                if (dialogue.speaker === 'user') {
+                  senderId = 'user';
                 } else {
-                  // Nếu không tìm thấy trong active_personas, vẫn giữ tên speaker và dùng màu hệ thống
-                  senderId = 'system';
+                  // Tìm persona ID dựa trên tên của speaker
+                  const foundPersona = allActivePersonas.find(p => p.name === dialogue.speaker);
+                  if (foundPersona) {
+                    senderId = foundPersona.id;
+                  } else {
+                    // Nếu không tìm thấy trong active_personas, vẫn giữ tên speaker và dùng màu hệ thống
+                    senderId = 'system';
+                  }
                 }
-              }
-              return {
-                id: Date.now() + index,
-                sender: senderId,
-                text: dialogue.content,
-                speakerName: speakerName, // Truyền tên speaker vào message object
-              };
-            });
-            setMessages(initialMessages);
-          }
-        })
-        .catch(sessionError => {
-          console.error('Error starting session:', sessionError);
-          // Xử lý lỗi khi không thể bắt đầu session, ví dụ hiển thị thông báo cho người dùng
-        });
+                return {
+                  id: Date.now() + index,
+                  sender: senderId,
+                  text: dialogue.content,
+                  speakerName: speakerName, // Truyền tên speaker vào message object
+                };
+              });
+              setMessages(initialMessages);
+            }
+          })
+          .catch(sessionError => {
+            console.error('Error starting session:', sessionError);
+            // Xử lý lỗi khi không thể bắt đầu session, ví dụ hiển thị thông báo cho người dùng
+          });
       })
       .catch((err) => {
         setCaseData({ skeleton: null, personas: null, context: null });
@@ -205,14 +204,14 @@ export default function CaseRunner() {
     // Điều kiện 2: Tất cả các canon events đều đã "pass"
     const canonEvents = caseData?.skeleton?.canon_events;
     const eventSummary = sessionState?.event_summary;
-    
+
     // --- DEBUG LOGGING ---
     console.log("--- Checking isFinished ---");
     console.log("Agent finished?", agentFinished);
     console.log("Canon Events from caseData:", canonEvents);
     console.log("Event Summary from sessionState:", eventSummary);
     // --- END DEBUG LOGGING ---
-    
+
     if (!Array.isArray(canonEvents) || canonEvents.length === 0 || typeof eventSummary !== 'object' || eventSummary === null) {
       return false;
     }
@@ -265,11 +264,11 @@ export default function CaseRunner() {
         },
         body: JSON.stringify(historyPayload)
       })
-      .then(res => res.json())
-      .then(data => console.log('Lưu lịch sử thành công:', data))
-      .catch(err => console.error('Lỗi khi lưu lịch sử trò chuyện:', err));
+        .then(res => res.json())
+        .then(data => console.log('Lưu lịch sử thành công:', data))
+        .catch(err => console.error('Lỗi khi lưu lịch sử trò chuyện:', err));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFinished, sessionState, sessionId, caseId, messages]); // Thêm isFinished vào dependencies
 
   // Đọc văn bản bằng SpeechSynthesis (đọc doc)
@@ -366,7 +365,7 @@ export default function CaseRunner() {
 
       const newSessionData = await response.json();
       console.log('Received new session data:', newSessionData);
-      
+
       // 3. Cập nhật lại state với dữ liệu mới từ API
       setSessionState(newSessionData.state);
 
@@ -375,35 +374,35 @@ export default function CaseRunner() {
         const state = newSessionData.state;
         const lastScore = state.event_summary?.last_score;
         const eventForScore = previousEventRef.current; // Điểm thường dành cho event trước đó
-        
+
         // Nếu có last_score và biết event nào đã được chấm điểm
         if (lastScore && eventForScore) {
-            // Cộng dồn vào tổng điểm
-            setCumulativeScore(prevScore => prevScore + lastScore);
-            console.log(`Added ${lastScore} to score for event ${eventForScore}.`);
+          // Cộng dồn vào tổng điểm
+          setCumulativeScore(prevScore => prevScore + lastScore);
+          console.log(`Added ${lastScore} to score for event ${eventForScore}.`);
 
-            // Cập nhật điểm cho event cụ thể trong eventScores
-            setEventScores(prev => {
-                const existingScore = prev[eventForScore]?.score || 0;
-                const newEventScore = lastScore; // Điểm của event là điểm lần chấm cuối cùng
-                // Lấy chi tiết scores từ event_summary
-                const detailedScores = state.event_summary?.scores || [];
-                const existingDetailedScores = prev[eventForScore]?.scores || [];
+          // Cập nhật điểm cho event cụ thể trong eventScores
+          setEventScores(prev => {
+            const existingScore = prev[eventForScore]?.score || 0;
+            const newEventScore = lastScore; // Điểm của event là điểm lần chấm cuối cùng
+            // Lấy chi tiết scores từ event_summary
+            const detailedScores = state.event_summary?.scores || [];
+            const existingDetailedScores = prev[eventForScore]?.scores || [];
 
-                return {
-                    ...prev,
-                    [eventForScore]: {
-                        // Giữ lại các chi tiết cũ nếu có, hoặc tạo mới
-                        ...prev[eventForScore],
-                        scores: [...existingDetailedScores, ...detailedScores], // Nối mảng chi tiết điểm
-                        eventId: eventForScore,
-                        score: existingScore + newEventScore, // Cộng dồn điểm
-                        timestamp: new Date().toLocaleTimeString('vi-VN'),
-                    }
-                };
-            });
+            return {
+              ...prev,
+              [eventForScore]: {
+                // Giữ lại các chi tiết cũ nếu có, hoặc tạo mới
+                ...prev[eventForScore],
+                scores: [...existingDetailedScores, ...detailedScores], // Nối mảng chi tiết điểm
+                eventId: eventForScore,
+                score: existingScore + newEventScore, // Cộng dồn điểm
+                timestamp: new Date().toLocaleTimeString('vi-VN'),
+              }
+            };
+          });
         }
-        
+
         // Cập nhật event hiện tại để theo dõi
         // Luôn cập nhật ref SAU KHI đã sử dụng giá trị cũ của nó
         previousEventRef.current = state.current_event;
@@ -482,31 +481,31 @@ export default function CaseRunner() {
 
   // Tính tổng điểm từ eventScores dict
   const totalScore = Object.values(eventScores).reduce((sum, event) => sum + (event.score || 0), 0);
-  
+
   // Lấy số event đã có điểm
   const eventCount = Object.keys(eventScores).length;
-  
+
   // Tính điểm và xác định trạng thái hoàn thành/thất bại
   const calculateResult = () => {
     if (!sessionState) return { score: cumulativeScore, isSuccess: false, maxScore: 0, eventScores };
-    
+
     // Tính điểm cuối cùng là ĐIỂM TRUNG BÌNH: tổng điểm chia cho số event đã làm.
     // Làm tròn đến một chữ số thập phân.
     const finalScore = eventCount > 0 ? Math.round((cumulativeScore / eventCount) * 10) / 10 : 0;
-    
+
     // Đặt thang điểm tối đa là 5
     const maxScore = 5;
-    
+
     // Xác định thành công hay thất bại (ví dụ: điểm trung bình >= 3 là thành công)
     const isSuccess = finalScore >= 3;
-    
+
     return { score: finalScore, isSuccess, maxScore, eventScores };
   };
 
   // Màn hình kết thúc khi current_event rỗng
   if (isFinished) {
     const { score, isSuccess, maxScore, eventScores: evtScores } = calculateResult();
-    
+
     return (
       <div className="flex min-h-screen flex-col text-slate-800">
         <main className="flex-1 flex items-center justify-center"
@@ -525,12 +524,12 @@ export default function CaseRunner() {
               {isSuccess ? '✅ Hoàn thành xuất sắc!' : '❌ Chưa đạt yêu cầu'}
             </h2>
             <p className="text-slate-300 mb-6">
-              {isSuccess 
+              {isSuccess
                 ? `Chúc mừng! Bạn đã hoàn thành case "${caseData.skeleton?.title}" thành công.`
                 : `Bạn chưa đạt yêu cầu cho case "${caseData.skeleton?.title}". Hãy thử lại!`
               }
             </p>
-            
+
             {/* Điểm số */}
             <div className={`rounded-2xl p-6 mb-6 ${isSuccess ? 'bg-emerald-900/50' : 'bg-rose-900/50'}`}>
               <p className="text-slate-400 text-sm mb-2">Điểm của bạn</p>
@@ -540,10 +539,10 @@ export default function CaseRunner() {
               {maxScore > 0 && (
                 <p className="text-slate-400 text-sm mt-2">/ {maxScore} điểm</p>
               )}
-              
+
               {/* Progress bar */}
               <div className="w-full h-3 bg-slate-700 rounded-full mt-4 overflow-hidden">
-                <div 
+                <div
                   className={`h-full transition-all duration-1000 ${isSuccess ? 'bg-emerald-500' : 'bg-rose-500'}`}
                   style={{ width: `${Math.min((score / maxScore) * 100, 100)}%` }}
                 />
@@ -566,7 +565,7 @@ export default function CaseRunner() {
                           +{eventData.score || 0}
                         </span>
                       </div>
-                      
+
                       {/* Chi tiết từng criterion */}
                       {eventData.scores && eventData.scores.length > 0 && (
                         <div className="space-y-2">
@@ -592,7 +591,7 @@ export default function CaseRunner() {
                     </div>
                   ))}
                 </div>
-                
+
                 {/* Tổng điểm */}
                 <div className="mt-4 pt-3 border-t border-slate-600 flex justify-between font-bold text-lg">
                   <span className="text-white">Tổng cộng:</span>
@@ -619,22 +618,21 @@ export default function CaseRunner() {
                 </div>
               </div>
             )}
-            
+
             {/* Nút hành động */}
             <div className="flex gap-3 justify-center flex-wrap">
-              <Link 
-                to="/case-list" 
+              <Link
+                to="/case-list"
                 className="inline-flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold px-6 py-3 rounded-xl transition"
               >
                 <span>📋</span> Danh sách Case
               </Link>
-              <button 
-                onClick={() => window.location.reload()} 
-                className={`inline-flex items-center gap-2 font-semibold px-6 py-3 rounded-xl transition ${
-                  isSuccess 
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white' 
+              <button
+                onClick={() => window.location.reload()}
+                className={`inline-flex items-center gap-2 font-semibold px-6 py-3 rounded-xl transition ${isSuccess
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
                     : 'bg-rose-600 hover:bg-rose-500 text-white'
-                }`}
+                  }`}
               >
                 <span>🔄</span> {isSuccess ? 'Chơi lại' : 'Thử lại'}
               </button>
@@ -667,12 +665,12 @@ export default function CaseRunner() {
               </p>
             </header>
             <div className="flex-1 space-y-6 overflow-y-auto p-6"
-                 style={{
-                          backgroundImage: `linear-gradient(rgba(20, 30, 50, 0.1), rgba(20, 30, 50, 0.3)), url(${backgroundUrl})`,
-                          backgroundSize: 'cover',
-                          backgroundPosition: 'center',
-                          backgroundRepeat: 'no-repeat',
-                        }}
+              style={{
+                backgroundImage: `linear-gradient(rgba(20, 30, 50, 0.1), rgba(20, 30, 50, 0.3)), url(${backgroundUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }}
             >
               {messages.map((msg) => (
                 <ChatMessage key={msg.id} message={msg} personas={caseData.personas?.personas || []} />
@@ -706,7 +704,7 @@ export default function CaseRunner() {
                 >
                   {/* Microphone Material Design icon */}
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5.5-3a.75.75 0 0 0-1.5 0 5 5 0 0 1-10 0 .75.75 0 1 0-1.5 0 6.5 6.5 0 0 0 6 6.48V21h-2a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5h-2v-2.52a6.5 6.5 0 0 0 6-6.48z"/>
+                    <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5.5-3a.75.75 0 0 0-1.5 0 5 5 0 0 1-10 0 .75.75 0 1 0-1.5 0 6.5 6.5 0 0 0 6 6.48V21h-2a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5h-2v-2.52a6.5 6.5 0 0 0 6-6.48z" />
                   </svg>
                 </button>
                 <button
@@ -716,8 +714,8 @@ export default function CaseRunner() {
                   onClick={handleReadDoc}
                 >
                   {/* Speaker/Volume Material Design icon */}
-                  <svg xmlns="http://www.w3.org/2000/svg"  className="h-6 w-6 text-primary-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v2.18c.61.57 1 1.37 1 2.25s-.39 1.68-1 2.25v2.18c1.48-.74 2.5-2.26 2.5-4.03zm2.5 0c0 2.89-2.09 5.28-4.95 5.7a.75.75 0 1 1-.13-1.5c2.06-.34 3.58-2.16 3.58-4.2s-1.52-3.86-3.58-4.2a.75.75 0 0 1 .12-1.5C17.91 6.22 20 8.61 20 11.5z"/>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v2.18c.61.57 1 1.37 1 2.25s-.39 1.68-1 2.25v2.18c1.48-.74 2.5-2.26 2.5-4.03zm2.5 0c0 2.89-2.09 5.28-4.95 5.7a.75.75 0 1 1-.13-1.5c2.06-.34 3.58-2.16 3.58-4.2s-1.52-3.86-3.58-4.2a.75.75 0 0 1 .12-1.5C17.91 6.22 20 8.61 20 11.5z" />
                   </svg>
                 </button>
                 <button
@@ -743,7 +741,7 @@ export default function CaseRunner() {
                   <div className="text-5xl font-bold text-emerald-400">{cumulativeScore}</div>
                   <p className="text-slate-400 text-sm mt-1">điểm ({eventCount} event)</p>
                 </div>
-                
+
                 {/* Điểm từng event */}
                 {eventCount > 0 && (
                   <div className="bg-slate-900/50 rounded-lg p-3 max-h-40 overflow-y-auto">
@@ -766,7 +764,7 @@ export default function CaseRunner() {
                     ))}
                   </div>
                 )}
-                
+
                 {eventCount === 0 && (
                   <p className="text-xs text-slate-500 italic text-center">Chưa có điểm nào</p>
                 )}
@@ -785,8 +783,8 @@ export default function CaseRunner() {
                 ) : (
                   <div className="flex items-center justify-center min-h-[85px]">
                     <svg className="animate-spin h-6 w-6 text-primary-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                     </svg>
                     <span className="text-white font-semibold">Đang tải tóm tắt bối cảnh...</span>
                   </div>
@@ -800,17 +798,16 @@ export default function CaseRunner() {
                     <h2 className="text-xl font-bold text-white mb-4 ">Phiên làm việc</h2>
                     <div className="flex gap-2 border-b border-slate-700">
                       {[
-                        { key: "skeleton", label: "Checklist" }, 
+                        { key: "skeleton", label: "Checklist" },
                         { key: "ai", label: "AI Facilitator" }
                       ].map((tab) => (
                         <button
                           key={tab.key}
                           onClick={() => setActiveTab(tab.key)}
-                          className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${
-                            activeTab === tab.key
+                          className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${activeTab === tab.key
                               ? "border-primary-500 text-white"
                               : "border-transparent text-slate-400 hover:border-slate-500 hover:text-white"
-                          }`}
+                            }`}
                         >
                           {tab.label}
                         </button>
@@ -853,8 +850,8 @@ export default function CaseRunner() {
                             <div className="bg-slate-800 rounded-lg p-4 text-white text-base leading-relaxed shadow-inner min-h-[64px] border border-slate-700">
                               {/* Hiện tại đặt biến giả để đỡ lỗi */}
                               {sessionState && sessionState?.ai_reply
-                                  ? (<span style={{ whiteSpace: 'pre-wrap' }}>{sessionState.ai_reply}</span>)
-                                  : (<span className="text-slate-500 italic">Chưa có phản hồi AI nào.</span>)
+                                ? (<span style={{ whiteSpace: 'pre-wrap' }}>{sessionState.ai_reply}</span>)
+                                : (<span className="text-slate-500 italic">Chưa có phản hồi AI nào.</span>)
                               }
                             </div>
                           </div>

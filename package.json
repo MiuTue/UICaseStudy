@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "nodemon MongoDB-index.js",
+    "start": "nodemon server/index.js",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

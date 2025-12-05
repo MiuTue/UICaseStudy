@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Footer from "../../components/Footer";
-import { backgroundImage2 } from "../../Image/image"; 
-import { storage, firestore } from "../../../firebase"; // Import firestore
+import { backgroundImage2 } from "../../Image/image";
+import { storage, firestore } from "../../config/firebase"; // Import firestore
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, setDoc } from "firebase/firestore"; // Import firestore functions
 import ReactFlow, { Background, Controls, MiniMap } from 'reactflow';
@@ -649,7 +649,7 @@ export default function CaseInput() {
               }).filter(Boolean).join('\n');
             } else if (typeof event.npc_appearance === 'object' && event.npc_appearance !== null) {
               // Handle case where it might be a single object instead of array
-              event.npc_appearance = ''; 
+              event.npc_appearance = '';
             }
 
             if (Array.isArray(event.success_criteria)) {
@@ -736,7 +736,7 @@ export default function CaseInput() {
       }
 
       alert(`Đã sinh case gợi ý '${draftData.case_id}' thành công.`);
-      
+
       // Show warnings if any
       if (draftData.warnings && draftData.warnings.length > 0) {
         setTimeout(() => {
@@ -861,375 +861,374 @@ export default function CaseInput() {
 
   return (
     <div className="min-h-screen">
-      <div className="relative flex min-h-screen flex-col" 
-         style={{
-                  backgroundImage: `linear-gradient(rgba(20,30,50,0.85), rgba(20,30,50,0.95)), url(${backgroundImage2})`,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                  backgroundAttachment: 'fixed',
-                }}
+      <div className="relative flex min-h-screen flex-col"
+        style={{
+          backgroundImage: `linear-gradient(rgba(20,30,50,0.85), rgba(20,30,50,0.95)), url(${backgroundImage2})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+        }}
       >
         <main className="flex-1 px-4 sm:px-6 py-12 text-slate-100">
-        <div className="mx-auto flex max-w-6xl flex-col gap-12">
-          {/* JSON Upload Section */}
-          <section className="rounded-3xl border border-slate-700 bg-slate-800/30 backdrop-blur-lg p-8 shadow-2xl shadow-slate-900/50">
-            <div className="flex flex-col items-center gap-3 text-center">
-              <span className="inline-flex items-center gap-2 rounded-full bg-primary-500/20 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-primary-300">
-                Nhập liệu
-              </span>
-              <h1 className="text-3xl font-bold text-white drop-shadow-md">
-                Trang Nhập Case
-              </h1>
-              <p className="max-w-2xl text-sm text-slate-300">
-                Tải lần lượt 3 tệp Skeleton, Context và Personas để tự động điền
-                biểu mẫu. Bạn vẫn có thể chỉnh sửa thủ công trước khi lưu case.
-              </p>
-            </div>
-            <div className="mt-6 flex flex-col items-center gap-2 text-center">
-              <button
-                type="button"
-                onClick={() => setDraftModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-transform duration-200 hover:scale-105 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-              >
-                Sinh case tự động
-              </button>
-              <p className="text-xs text-slate-400">
-                Nhập prompt tự do hoặc chủ đề chi tiết để hệ thống gợi ý case
-                hoàn chỉnh nhanh chóng.
-              </p>
-            </div>
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              {["skeleton", "context", "personas"].map((type) => (
-                <div
-                  key={type}
-                  className="group flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-800/40 p-6 text-center shadow-lg shadow-slate-900/20 transition-all duration-300 focus-within:border-primary-500/70 focus-within:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-500/70 hover:bg-slate-800/80"
-                  tabIndex="0"
-                  role="button"
-                  aria-label={`Nhập file ${type.charAt(0).toUpperCase() + type.slice(1)} JSON`}
-                  onClick={() => document.getElementById(`file-input-${type}`).click()}
-                >
-                  <input
-                    id={`file-input-${type}`}
-                    type="file"
-                    accept="application/json"
-                    className="hidden"
-                    onChange={(e) => handleFileChange(type, e.target.files[0])}
-                  />
-                  <span className="text-xs font-semibold uppercase tracking-wide text-primary-400">
-                    {type} JSON
-                  </span>
-                  <p className="text-sm font-semibold text-slate-100">
-                    Chọn tệp {type}.json
-                  </p>
-                  <p className="max-w-[16rem] text-xs text-slate-400">
-                    Nhấn để tải lên
-                  </p>
-                  <div className="flex flex-wrap items-center justify-center gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Ngăn sự kiện click của div cha
-                        document.getElementById(`file-input-${type}`).click();
-                      }}
-                      className="rounded-full bg-primary-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md shadow-primary-500/20 transition-transform duration-200 hover:scale-105 hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-                    >
-                      Chọn file
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleExportJson(type); }}
-                      className="rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-1.5 text-xs font-semibold text-primary-300 transition-transform duration-200 hover:scale-105 hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400"
-                    >
-                      Luu JSON
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleClearData(type); }}
-                      className="rounded-full border border-slate-600 px-4 py-1.5 text-xs font-semibold text-slate-400 transition-transform duration-200 hover:scale-105 hover:border-slate-500 hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-500"
-                    >
-                      Xóa
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Tabs and Panels Section */}
-          <section className="space-y-8">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-wrap gap-3" role="tablist">
-                {["skeleton", "context", "personas", "flow"].map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveTab(tab)}
-                    className={`rounded-full border px-5 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-200 ${
-                      activeTab === tab
-                        ? "border-transparent bg-primary-600 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-500"
-                        : "border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600 hover:bg-slate-700/70 hover:text-white"
-                    }`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
+          <div className="mx-auto flex max-w-6xl flex-col gap-12">
+            {/* JSON Upload Section */}
+            <section className="rounded-3xl border border-slate-700 bg-slate-800/30 backdrop-blur-lg p-8 shadow-2xl shadow-slate-900/50">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <span className="inline-flex items-center gap-2 rounded-full bg-primary-500/20 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-primary-300">
+                  Nhập liệu
+                </span>
+                <h1 className="text-3xl font-bold text-white drop-shadow-md">
+                  Trang Nhập Case
+                </h1>
+                <p className="max-w-2xl text-sm text-slate-300">
+                  Tải lần lượt 3 tệp Skeleton, Context và Personas để tự động điền
+                  biểu mẫu. Bạn vẫn có thể chỉnh sửa thủ công trước khi lưu case.
+                </p>
               </div>
-              <button
-                type="button"
-                onClick={handleSaveCase}
-                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-transform duration-200 hover:scale-105 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-400 disabled:opacity-60"
-              >
-                Lưu Toàn Bộ Case
-              </button>
-            </div>
-
-            <div className="rounded-3xl border border-slate-700 bg-slate-800/50 backdrop-blur-xl p-6 sm:p-8 shadow-2xl shadow-black/20">
-              {/* Skeleton Panel */}
-              <section hidden={activeTab !== "skeleton"} className="space-y-8">
-                <header className="space-y-1"><h2 className="text-2xl font-bold text-white">Skeleton</h2><p className="text-sm text-slate-300">Thông tin tổng quan và danh sách Canon Event.</p></header>
-                <form className="space-y-8">
-                  {/* Basic Skeleton Fields */}
-                  <div className="grid gap-6 md:grid-cols-2" data-basic-fields="skeleton">
-                    <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">
-                      Case ID
-                      <input type="text" name="case_id" value={skeleton.case_id || ''} onChange={handleCaseIdChange} placeholder="ví dụ: case_training_001" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
-                    </label>
-                    <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">
-                      Tên case
-                      <input type="text" name="title" value={skeleton.title || ''} onChange={handleSkeletonChange} placeholder="Tên case hiển thị trong hệ thống" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
-                    </label>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-semibold text-white">
-                        Canon Events
-                      </h3>
-                      <button type="button" onClick={handleAddEvent} className="inline-flex items-center gap-2 rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-2 text-xs font-semibold text-primary-300 transition hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">
-                        + Thêm canon event
-                      </button>
-                    </div>
-                    {/* Canon Events List */}
-                    <div className="space-y-6">
-                      {skeleton.canon_events.map((event, eventIndex) => (
-                        <article key={eventIndex} className="space-y-6 rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-lg">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-semibold text-slate-100">Canon Event #{eventIndex + 1}</h4>
-                            <button type="button" onClick={() => handleRemoveEvent(eventIndex)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">Xóa</button>
-                          </div>
-                          <div className="grid gap-6 md:grid-cols-2">
-                            <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Mã sự kiện<input name="id" value={event.id || ''} onChange={(e) => handleEventChange(e, eventIndex)} type="text" placeholder="canon_event_01" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Tiêu đề<input name="title" value={event.title || ''} onChange={(e) => handleEventChange(e, eventIndex)} type="text" placeholder="Tên canon event" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Mô tả chi tiết<textarea name="description" value={event.description || ''} onChange={(e) => handleEventChange(e, eventIndex)} rows="3" placeholder="Diễn giải tình huống, yếu tố quan trọng..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">NPC xuất hiện<textarea name="npc_appearance" value={event.npc_appearance || ''} onChange={(e) => handleEventChange(e, eventIndex)} rows="3" placeholder="Định dạng: persona_id: vai trò (mỗi dòng hoặc cách nhau bởi dấu phẩy)" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Timeout (lượt)<input name="timeout_turn" value={event.timeout_turn || 0} onChange={(e) => handleEventChange(e, eventIndex)} type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                          </div>
-
-                          {/* Success Criteria Section */}
-                          <div className="mt-4 space-y-3">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <span className="text-sm font-semibold uppercase tracking-wide text-slate-300">Success Criteria</span>
-                              <button type="button" onClick={() => handleAddSuccessCriterion(eventIndex)} className="text-xs font-semibold text-primary-600 transition hover:text-primary-500 focus:outline-none">Thêm tiêu chí</button>
-                            </div>
-                            <p className="text-xs text-slate-400">Mỗi tiêu chí gồm phần mô tả và 5 mức đánh giá (điểm 5 đến 1).</p>
-                            <div className="space-y-4">
-                              {Array.isArray(event.success_criteria) && event.success_criteria.map((criterion, critIndex) => (
-                                <div key={critIndex} className="rounded-2xl border border-slate-700 bg-slate-800/50 p-4 shadow-inner space-y-4">
-                                  <div className="flex flex-wrap items-center justify-between gap-3">
-                                    <span className="text-sm font-semibold text-slate-200">Tiêu chí</span>
-                                    <button type="button" onClick={() => handleRemoveSuccessCriterion(eventIndex, critIndex)} className="text-xs font-semibold text-slate-400 transition hover:text-rose-500 focus:outline-none">Xóa</button>
-                                  </div>
-                                  <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">
-                                    Mô tả tiêu chí
-                                    <input type="text" name="description" value={criterion?.description || ''} onChange={(e) => handleSuccessCriterionChange(e, eventIndex, critIndex)} placeholder="ví dụ: CPR – Đánh giá hiệu quả..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
-                                  </label>
-                                  <div className="grid gap-3 md:grid-cols-2">
-                                    <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 5 (Xuất sắc)<textarea rows="2" value={criterion?.levels?.[5] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 5)} placeholder="Mô tả cụ thể cho điểm 5." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                                    <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 4<textarea rows="2" value={criterion?.levels?.[4] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 4)} placeholder="Mô tả cụ thể cho điểm 4." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                                    <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 3<textarea rows="2" value={criterion?.levels?.[3] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 3)} placeholder="Mô tả cụ thể cho điểm 3." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                                    <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 2<textarea rows="2" value={criterion?.levels?.[2] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 2)} placeholder="Mô tả cụ thể cho điểm 2." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                                    <label className="text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Mức 1 (Thấp nhất)<textarea rows="2" value={criterion?.levels?.[1] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 1)} placeholder="Mô tả cụ thể cho điểm 1." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Outcome Branching Section */}
-                          <div className="mt-4 space-y-3">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div>
-                                <span className="text-sm font-semibold uppercase tracking-wide text-primary-400">Rẽ nhánh theo thang điểm 5</span>
-                                <p className="text-xs text-slate-400">Chỉ cần nhập 5 nhánh tương ứng điểm 5 → 1 (điểm cao là tốt nhất, điểm thấp là thất bại).</p>
-                              </div>
-                              <button type="button" onClick={() => handleResetBranches(eventIndex)} className="text-xs font-semibold text-primary-600 transition hover:text-primary-500 focus:outline-none">Xóa nhánh</button>
-                            </div>
-                            <div className="space-y-2">
-                              {SUCCESS_LEVEL_SCORES.map((score) => (
-                                <label key={score} className="block space-y-1 rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">Điểm {score}</span>
-                                  <input type="text" value={event.on_score_branches?.[score] || ''} onChange={(e) => handleBranchChange(e, eventIndex, score)} placeholder={`Nhánh kế tiếp khi đạt điểm ${score}.`} className="w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("context")}
-                      className="inline-flex items-center gap-2 rounded-full bg-primary-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-                    >
-                      Sang Context →
-                    </button>
-                  </div>
-                </form>
-              </section>
-
-              {/* Context Panel */}
-              <section hidden={activeTab !== "context"} className="space-y-8">
-                <header className="space-y-1">
-                  <h2 className="text-2xl font-bold text-white">
-                    Context
-                  </h2>
-                  <p className="text-sm text-slate-300">
-                    Bối cảnh, resource và điều kiện hiện trường.
-                  </p>
-                </header>
-                <form className="space-y-8">
-                  {/* Basic Context Fields */}
-                  <div className="grid gap-6 md:grid-cols-2">
-                     <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Case ID<input name="case_id" type="text" value={context.case_id || ''} onChange={handleCaseIdChange} placeholder="Sẽ tự động đồng bộ" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                     <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Chủ đề case<input name="topic" type="text" value={context.topic || ''} onChange={handleContextChange} placeholder="Ví dụ: Tai nạn giao thông giờ cao điểm" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                  </div>
-                  {/* Scene Section */}
-                  <div className="rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-inner">
-                    <h3 className="text-lg font-semibold text-white">Bối cảnh (Scene)</h3>
-                    <div className="mt-4 grid gap-6 md:grid-cols-2">
-                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Thời gian<input name="time" type="text" value={context.scene?.time || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Thời điểm diễn ra" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Thời tiết<input name="weather" type="text" value={context.scene?.weather || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Nắng, mưa..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Vị trí<input name="location" type="text" value={context.scene?.location || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Địa điểm cụ thể" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Mức độ ồn & ghi chú khác<textarea name="noise" rows="3" value={context.scene?.noise || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Ghi chú thêm về môi trường" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                    </div>
-                  </div>
-                  {/* Index Event Section */}
-                  <div className="rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-inner">
-                    <h3 className="text-lg font-semibold text-white">Sự kiện ban đầu</h3>
-                    <div className="mt-4 grid gap-6 md:grid-cols-2">
-                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Tóm tắt sự kiện<textarea name="summary" rows="3" value={context.index_event?.summary || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder="Mô tả ngắn gọn diễn biến" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Tình trạng hiện tại<textarea name="current_state" rows="3" value={context.index_event?.current_state || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder="Điều gì đang diễn ra?" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Ai tiếp cận đầu tiên<input name="who_first" type="text" value={context.index_event?.who_first || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder="Nhóm/cá nhân đầu tiên xử lý hiện trường" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                    </div>
-                  </div>
-                  {/* Background Image Generator */}
-                  <div className="rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-inner space-y-5">
-                    {/* Header and other elements from nhap-case.html can be added here */}
-                    <h3 className="text-lg font-semibold text-white">Ảnh nền minh họa</h3>
-                    <div className="flex flex-wrap items-end justify-between gap-4">
-                      <p className="text-sm text-slate-400 max-w-xl">
-                        Bạn có thể sinh ảnh tự động từ bối cảnh đã nhập, hoặc thêm prompt tùy chọn để mô tả chi tiết hơn.
-                      </p>
+              <div className="mt-6 flex flex-col items-center gap-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setDraftModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-transform duration-200 hover:scale-105 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                >
+                  Sinh case tự động
+                </button>
+                <p className="text-xs text-slate-400">
+                  Nhập prompt tự do hoặc chủ đề chi tiết để hệ thống gợi ý case
+                  hoàn chỉnh nhanh chóng.
+                </p>
+              </div>
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                {["skeleton", "context", "personas"].map((type) => (
+                  <div
+                    key={type}
+                    className="group flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-800/40 p-6 text-center shadow-lg shadow-slate-900/20 transition-all duration-300 focus-within:border-primary-500/70 focus-within:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-500/70 hover:bg-slate-800/80"
+                    tabIndex="0"
+                    role="button"
+                    aria-label={`Nhập file ${type.charAt(0).toUpperCase() + type.slice(1)} JSON`}
+                    onClick={() => document.getElementById(`file-input-${type}`).click()}
+                  >
+                    <input
+                      id={`file-input-${type}`}
+                      type="file"
+                      accept="application/json"
+                      className="hidden"
+                      onChange={(e) => handleFileChange(type, e.target.files[0])}
+                    />
+                    <span className="text-xs font-semibold uppercase tracking-wide text-primary-400">
+                      {type} JSON
+                    </span>
+                    <p className="text-sm font-semibold text-slate-100">
+                      Chọn tệp {type}.json
+                    </p>
+                    <p className="max-w-[16rem] text-xs text-slate-400">
+                      Nhấn để tải lên
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2">
                       <button
                         type="button"
-                        onClick={handleGenerateBackground}
-                        disabled={backgroundState.isLoading}
-                        className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-transform duration-200 hover:scale-105 hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:cursor-wait disabled:bg-sky-400"
+                        onClick={(e) => {
+                          e.stopPropagation(); // Ngăn sự kiện click của div cha
+                          document.getElementById(`file-input-${type}`).click();
+                        }}
+                        className="rounded-full bg-primary-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md shadow-primary-500/20 transition-transform duration-200 hover:scale-105 hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                       >
-                        {backgroundState.isLoading ? 'Đang xử lý...' : 'Sinh ảnh'}
+                        Chọn file
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleExportJson(type); }}
+                        className="rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-1.5 text-xs font-semibold text-primary-300 transition-transform duration-200 hover:scale-105 hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                      >
+                        Luu JSON
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleClearData(type); }}
+                        className="rounded-full border border-slate-600 px-4 py-1.5 text-xs font-semibold text-slate-400 transition-transform duration-200 hover:scale-105 hover:border-slate-500 hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                      >
+                        Xóa
                       </button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Tabs and Panels Section */}
+            <section className="space-y-8">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap gap-3" role="tablist">
+                  {["skeleton", "context", "personas", "flow"].map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setActiveTab(tab)}
+                      className={`rounded-full border px-5 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-200 ${activeTab === tab
+                          ? "border-transparent bg-primary-600 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-500"
+                          : "border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600 hover:bg-slate-700/70 hover:text-white"
+                        }`}
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveCase}
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-transform duration-200 hover:scale-105 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-400 disabled:opacity-60"
+                >
+                  Lưu Toàn Bộ Case
+                </button>
+              </div>
+
+              <div className="rounded-3xl border border-slate-700 bg-slate-800/50 backdrop-blur-xl p-6 sm:p-8 shadow-2xl shadow-black/20">
+                {/* Skeleton Panel */}
+                <section hidden={activeTab !== "skeleton"} className="space-y-8">
+                  <header className="space-y-1"><h2 className="text-2xl font-bold text-white">Skeleton</h2><p className="text-sm text-slate-300">Thông tin tổng quan và danh sách Canon Event.</p></header>
+                  <form className="space-y-8">
+                    {/* Basic Skeleton Fields */}
+                    <div className="grid gap-6 md:grid-cols-2" data-basic-fields="skeleton">
+                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">
+                        Case ID
+                        <input type="text" name="case_id" value={skeleton.case_id || ''} onChange={handleCaseIdChange} placeholder="ví dụ: case_training_001" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
+                      </label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">
+                        Tên case
+                        <input type="text" name="title" value={skeleton.title || ''} onChange={handleSkeletonChange} placeholder="Tên case hiển thị trong hệ thống" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
+                      </label>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xl font-semibold text-white">
+                          Canon Events
+                        </h3>
+                        <button type="button" onClick={handleAddEvent} className="inline-flex items-center gap-2 rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-2 text-xs font-semibold text-primary-300 transition hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">
+                          + Thêm canon event
+                        </button>
+                      </div>
+                      {/* Canon Events List */}
+                      <div className="space-y-6">
+                        {skeleton.canon_events.map((event, eventIndex) => (
+                          <article key={eventIndex} className="space-y-6 rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-lg">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-semibold text-slate-100">Canon Event #{eventIndex + 1}</h4>
+                              <button type="button" onClick={() => handleRemoveEvent(eventIndex)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">Xóa</button>
+                            </div>
+                            <div className="grid gap-6 md:grid-cols-2">
+                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Mã sự kiện<input name="id" value={event.id || ''} onChange={(e) => handleEventChange(e, eventIndex)} type="text" placeholder="canon_event_01" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Tiêu đề<input name="title" value={event.title || ''} onChange={(e) => handleEventChange(e, eventIndex)} type="text" placeholder="Tên canon event" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Mô tả chi tiết<textarea name="description" value={event.description || ''} onChange={(e) => handleEventChange(e, eventIndex)} rows="3" placeholder="Diễn giải tình huống, yếu tố quan trọng..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">NPC xuất hiện<textarea name="npc_appearance" value={event.npc_appearance || ''} onChange={(e) => handleEventChange(e, eventIndex)} rows="3" placeholder="Định dạng: persona_id: vai trò (mỗi dòng hoặc cách nhau bởi dấu phẩy)" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Timeout (lượt)<input name="timeout_turn" value={event.timeout_turn || 0} onChange={(e) => handleEventChange(e, eventIndex)} type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                            </div>
+
+                            {/* Success Criteria Section */}
+                            <div className="mt-4 space-y-3">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <span className="text-sm font-semibold uppercase tracking-wide text-slate-300">Success Criteria</span>
+                                <button type="button" onClick={() => handleAddSuccessCriterion(eventIndex)} className="text-xs font-semibold text-primary-600 transition hover:text-primary-500 focus:outline-none">Thêm tiêu chí</button>
+                              </div>
+                              <p className="text-xs text-slate-400">Mỗi tiêu chí gồm phần mô tả và 5 mức đánh giá (điểm 5 đến 1).</p>
+                              <div className="space-y-4">
+                                {Array.isArray(event.success_criteria) && event.success_criteria.map((criterion, critIndex) => (
+                                  <div key={critIndex} className="rounded-2xl border border-slate-700 bg-slate-800/50 p-4 shadow-inner space-y-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                      <span className="text-sm font-semibold text-slate-200">Tiêu chí</span>
+                                      <button type="button" onClick={() => handleRemoveSuccessCriterion(eventIndex, critIndex)} className="text-xs font-semibold text-slate-400 transition hover:text-rose-500 focus:outline-none">Xóa</button>
+                                    </div>
+                                    <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">
+                                      Mô tả tiêu chí
+                                      <input type="text" name="description" value={criterion?.description || ''} onChange={(e) => handleSuccessCriterionChange(e, eventIndex, critIndex)} placeholder="ví dụ: CPR – Đánh giá hiệu quả..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
+                                    </label>
+                                    <div className="grid gap-3 md:grid-cols-2">
+                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 5 (Xuất sắc)<textarea rows="2" value={criterion?.levels?.[5] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 5)} placeholder="Mô tả cụ thể cho điểm 5." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 4<textarea rows="2" value={criterion?.levels?.[4] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 4)} placeholder="Mô tả cụ thể cho điểm 4." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 3<textarea rows="2" value={criterion?.levels?.[3] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 3)} placeholder="Mô tả cụ thể cho điểm 3." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 2<textarea rows="2" value={criterion?.levels?.[2] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 2)} placeholder="Mô tả cụ thể cho điểm 2." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Mức 1 (Thấp nhất)<textarea rows="2" value={criterion?.levels?.[1] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 1)} placeholder="Mô tả cụ thể cho điểm 1." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Outcome Branching Section */}
+                            <div className="mt-4 space-y-3">
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                  <span className="text-sm font-semibold uppercase tracking-wide text-primary-400">Rẽ nhánh theo thang điểm 5</span>
+                                  <p className="text-xs text-slate-400">Chỉ cần nhập 5 nhánh tương ứng điểm 5 → 1 (điểm cao là tốt nhất, điểm thấp là thất bại).</p>
+                                </div>
+                                <button type="button" onClick={() => handleResetBranches(eventIndex)} className="text-xs font-semibold text-primary-600 transition hover:text-primary-500 focus:outline-none">Xóa nhánh</button>
+                              </div>
+                              <div className="space-y-2">
+                                {SUCCESS_LEVEL_SCORES.map((score) => (
+                                  <label key={score} className="block space-y-1 rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">Điểm {score}</span>
+                                    <input type="text" value={event.on_score_branches?.[score] || ''} onChange={(e) => handleBranchChange(e, eventIndex, score)} placeholder={`Nhánh kế tiếp khi đạt điểm ${score}.`} className="w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("context")}
+                        className="inline-flex items-center gap-2 rounded-full bg-primary-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                      >
+                        Sang Context →
+                      </button>
+                    </div>
+                  </form>
+                </section>
+
+                {/* Context Panel */}
+                <section hidden={activeTab !== "context"} className="space-y-8">
+                  <header className="space-y-1">
+                    <h2 className="text-2xl font-bold text-white">
+                      Context
+                    </h2>
+                    <p className="text-sm text-slate-300">
+                      Bối cảnh, resource và điều kiện hiện trường.
+                    </p>
+                  </header>
+                  <form className="space-y-8">
+                    {/* Basic Context Fields */}
                     <div className="grid gap-6 md:grid-cols-2">
-                      <label className="text-sm font-semibold text-slate-200">Prompt tùy chọn<textarea name="prompt" value={backgroundState.prompt} onChange={handleBackgroundInputChange} rows="4" placeholder="Mô tả bối cảnh..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                      <div className="space-y-2">
-                        <span className="text-sm font-semibold text-slate-200">Tải ảnh lên</span>
-                        <div 
-                          className={`flex items-center justify-center w-full h-32 border-2 border-slate-600 border-dashed rounded-lg cursor-pointer bg-slate-800/50 hover:bg-slate-700/60 ${backgroundState.isLoading ? 'animate-pulse' : ''}`}
-                          onClick={() => document.getElementById('background-image-upload').click()}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                              handleBackgroundImageUpload(e.dataTransfer.files[0]);
-                            }
-                          }}
-                          onDragOver={(e) => e.preventDefault()}
+                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Case ID<input name="case_id" type="text" value={context.case_id || ''} onChange={handleCaseIdChange} placeholder="Sẽ tự động đồng bộ" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Chủ đề case<input name="topic" type="text" value={context.topic || ''} onChange={handleContextChange} placeholder="Ví dụ: Tai nạn giao thông giờ cao điểm" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                    </div>
+                    {/* Scene Section */}
+                    <div className="rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-inner">
+                      <h3 className="text-lg font-semibold text-white">Bối cảnh (Scene)</h3>
+                      <div className="mt-4 grid gap-6 md:grid-cols-2">
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Thời gian<input name="time" type="text" value={context.scene?.time || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Thời điểm diễn ra" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Thời tiết<input name="weather" type="text" value={context.scene?.weather || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Nắng, mưa..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Vị trí<input name="location" type="text" value={context.scene?.location || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Địa điểm cụ thể" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Mức độ ồn & ghi chú khác<textarea name="noise" rows="3" value={context.scene?.noise || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Ghi chú thêm về môi trường" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                      </div>
+                    </div>
+                    {/* Index Event Section */}
+                    <div className="rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-inner">
+                      <h3 className="text-lg font-semibold text-white">Sự kiện ban đầu</h3>
+                      <div className="mt-4 grid gap-6 md:grid-cols-2">
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Tóm tắt sự kiện<textarea name="summary" rows="3" value={context.index_event?.summary || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder="Mô tả ngắn gọn diễn biến" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Tình trạng hiện tại<textarea name="current_state" rows="3" value={context.index_event?.current_state || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder="Điều gì đang diễn ra?" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Ai tiếp cận đầu tiên<input name="who_first" type="text" value={context.index_event?.who_first || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder="Nhóm/cá nhân đầu tiên xử lý hiện trường" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                      </div>
+                    </div>
+                    {/* Background Image Generator */}
+                    <div className="rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-inner space-y-5">
+                      {/* Header and other elements from nhap-case.html can be added here */}
+                      <h3 className="text-lg font-semibold text-white">Ảnh nền minh họa</h3>
+                      <div className="flex flex-wrap items-end justify-between gap-4">
+                        <p className="text-sm text-slate-400 max-w-xl">
+                          Bạn có thể sinh ảnh tự động từ bối cảnh đã nhập, hoặc thêm prompt tùy chọn để mô tả chi tiết hơn.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleGenerateBackground}
+                          disabled={backgroundState.isLoading}
+                          className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-transform duration-200 hover:scale-105 hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:cursor-wait disabled:bg-sky-400"
                         >
-                          <div className="flex flex-col items-center justify-center text-center">
-                            <svg className="w-8 h-8 mb-2 text-slate-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
-                            <p className="text-xs text-slate-400"><span className="font-semibold">Nhấn để tải lên</span> hoặc kéo thả</p>
-                            <p className="text-xs text-slate-500">PNG, JPG, WEBP</p>
-                          </div>
-                          <input id="background-image-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleBackgroundImageUpload(e.target.files[0])} />
-                        </div>
+                          {backgroundState.isLoading ? 'Đang xử lý...' : 'Sinh ảnh'}
+                        </button>
                       </div>
-                    </div>
-                    {(backgroundState.imageUrl || context.background_image) && ( // Ưu tiên hiển thị ảnh mới (local) hoặc ảnh đã lưu
-                      <div className="mt-4">
-                        <h4 className="text-sm font-semibold text-slate-200 mb-2">Xem trước ảnh nền</h4>
-                        <div className="relative">
-                          <img src={backgroundState.imageUrl || context.background_image} alt="Xem trước ảnh nền" className="w-full max-h-60 rounded-lg object-cover border border-slate-200" />
-                          <button 
-                            type="button" 
-                            onClick={handleDownloadImage}
-                            className="absolute top-2 right-2 bg-white/80 text-slate-800 text-xs font-semibold px-3 py-1 rounded-full shadow hover:bg-white"
+                      <div className="grid gap-6 md:grid-cols-2">
+                        <label className="text-sm font-semibold text-slate-200">Prompt tùy chọn<textarea name="prompt" value={backgroundState.prompt} onChange={handleBackgroundInputChange} rows="4" placeholder="Mô tả bối cảnh..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                        <div className="space-y-2">
+                          <span className="text-sm font-semibold text-slate-200">Tải ảnh lên</span>
+                          <div
+                            className={`flex items-center justify-center w-full h-32 border-2 border-slate-600 border-dashed rounded-lg cursor-pointer bg-slate-800/50 hover:bg-slate-700/60 ${backgroundState.isLoading ? 'animate-pulse' : ''}`}
+                            onClick={() => document.getElementById('background-image-upload').click()}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                handleBackgroundImageUpload(e.dataTransfer.files[0]);
+                              }
+                            }}
+                            onDragOver={(e) => e.preventDefault()}
                           >
-                            Lưu ảnh
-                          </button>
+                            <div className="flex flex-col items-center justify-center text-center">
+                              <svg className="w-8 h-8 mb-2 text-slate-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" /></svg>
+                              <p className="text-xs text-slate-400"><span className="font-semibold">Nhấn để tải lên</span> hoặc kéo thả</p>
+                              <p className="text-xs text-slate-500">PNG, JPG, WEBP</p>
+                            </div>
+                            <input id="background-image-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleBackgroundImageUpload(e.target.files[0])} />
+                          </div>
                         </div>
                       </div>
-                    )}
-                  </div>
-                  {/* Notes Section */}
-                  <div className="grid gap-6 md:grid-cols-2 text-slate-300">
-                    <label className="block text-sm font-semibold uppercase tracking-wide">Ràng buộc hiện trường<textarea name="constraints" rows="3" value={context.constraints || ''} onChange={handleContextChange} placeholder="Mỗi dòng là một ràng buộc" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                    <label className="block text-sm font-semibold uppercase tracking-wide">Chính sách & an toàn<textarea name="policies" rows="3" value={context.policies || ''} onChange={handleContextChange} placeholder="Mỗi dòng là một chính sách cần tuân thủ" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                    <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Đơn vị bàn giao<input name="handover" type="text" value={context.handover || ''} onChange={handleContextChange} placeholder="Ví dụ: Bàn giao cho đội cứu trợ địa phương" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                    <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Trạng thái thành công cuối cùng<textarea name="success_state" rows="3" value={context.success_state || ''} onChange={handleContextChange} placeholder="Tình trạng lý tưởng sau khi hoàn thành" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                  </div>
-
-                  {/* Resources Section */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-semibold text-white">Nguồn lực khả dụng</h3>
-                      <button type="button" onClick={handleAddResource} className="inline-flex items-center gap-2 rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-2 text-xs font-semibold text-primary-300 transition hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">+ Thêm nhóm resource</button>
-                    </div>
-                    <div className="space-y-6">
-                      {context.resources.map((resource, index) => (
-                        <article key={index} className="space-y-6 rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-lg">
-                           <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-semibold text-slate-100">Nhóm Resource #{index + 1}</h4>
-                            <button type="button" onClick={() => handleRemoveResource(index)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">Xóa</button>
+                      {(backgroundState.imageUrl || context.background_image) && ( // Ưu tiên hiển thị ảnh mới (local) hoặc ảnh đã lưu
+                        <div className="mt-4">
+                          <h4 className="text-sm font-semibold text-slate-200 mb-2">Xem trước ảnh nền</h4>
+                          <div className="relative">
+                            <img src={backgroundState.imageUrl || context.background_image} alt="Xem trước ảnh nền" className="w-full max-h-60 rounded-lg object-cover border border-slate-200" />
+                            <button
+                              type="button"
+                              onClick={handleDownloadImage}
+                              className="absolute top-2 right-2 bg-white/80 text-slate-800 text-xs font-semibold px-3 py-1 rounded-full shadow hover:bg-white"
+                            >
+                              Lưu ảnh
+                            </button>
                           </div>
-                          <div className="grid gap-6 md:grid-cols-2 text-slate-300">
-                            <label className="block text-sm font-semibold uppercase tracking-wide">Tên nhóm<input name="label" type="text" value={resource.label || ''} onChange={(e) => handleResourceChange(e, index)} placeholder="Ví dụ: Nhân lực y tế tiền viện" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide">Ghi chú (tùy chọn)<input name="note" type="text" value={resource.note || ''} onChange={(e) => handleResourceChange(e, index)} placeholder="Ghi chú bổ sung cho nhóm này" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Danh sách nguồn lực<textarea name="items" rows="3" value={resource.items || ''} onChange={(e) => handleResourceChange(e, index)} placeholder="Mỗi dòng là một tài nguyên" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                          </div>
-                        </article>
-                      ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="flex flex-wrap justify-between gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("skeleton")}
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-600 px-5 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-slate-500"
-                    >
-                      ← Về Skeleton
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("personas")}
-                      className="inline-flex items-center gap-2 rounded-full bg-primary-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
-                    >
-                      Sang Personas →
-                    </button>
-                  </div>
-                </form>
-              </section>
+                    {/* Notes Section */}
+                    <div className="grid gap-6 md:grid-cols-2 text-slate-300">
+                      <label className="block text-sm font-semibold uppercase tracking-wide">Ràng buộc hiện trường<textarea name="constraints" rows="3" value={context.constraints || ''} onChange={handleContextChange} placeholder="Mỗi dòng là một ràng buộc" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide">Chính sách & an toàn<textarea name="policies" rows="3" value={context.policies || ''} onChange={handleContextChange} placeholder="Mỗi dòng là một chính sách cần tuân thủ" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Đơn vị bàn giao<input name="handover" type="text" value={context.handover || ''} onChange={handleContextChange} placeholder="Ví dụ: Bàn giao cho đội cứu trợ địa phương" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Trạng thái thành công cuối cùng<textarea name="success_state" rows="3" value={context.success_state || ''} onChange={handleContextChange} placeholder="Tình trạng lý tưởng sau khi hoàn thành" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                    </div>
 
-              {/* Flow Panel */}
+                    {/* Resources Section */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xl font-semibold text-white">Nguồn lực khả dụng</h3>
+                        <button type="button" onClick={handleAddResource} className="inline-flex items-center gap-2 rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-2 text-xs font-semibold text-primary-300 transition hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">+ Thêm nhóm resource</button>
+                      </div>
+                      <div className="space-y-6">
+                        {context.resources.map((resource, index) => (
+                          <article key={index} className="space-y-6 rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-lg">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-semibold text-slate-100">Nhóm Resource #{index + 1}</h4>
+                              <button type="button" onClick={() => handleRemoveResource(index)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">Xóa</button>
+                            </div>
+                            <div className="grid gap-6 md:grid-cols-2 text-slate-300">
+                              <label className="block text-sm font-semibold uppercase tracking-wide">Tên nhóm<input name="label" type="text" value={resource.label || ''} onChange={(e) => handleResourceChange(e, index)} placeholder="Ví dụ: Nhân lực y tế tiền viện" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">Ghi chú (tùy chọn)<input name="note" type="text" value={resource.note || ''} onChange={(e) => handleResourceChange(e, index)} placeholder="Ghi chú bổ sung cho nhóm này" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Danh sách nguồn lực<textarea name="items" rows="3" value={resource.items || ''} onChange={(e) => handleResourceChange(e, index)} placeholder="Mỗi dòng là một tài nguyên" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("skeleton")}
+                        className="inline-flex items-center gap-2 rounded-full border border-slate-600 px-5 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-slate-500"
+                      >
+                        ← Về Skeleton
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("personas")}
+                        className="inline-flex items-center gap-2 rounded-full bg-primary-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                      >
+                        Sang Personas →
+                      </button>
+                    </div>
+                  </form>
+                </section>
+
+                {/* Flow Panel */}
                 <section hidden={activeTab !== "flow"} className="space-y-8">
                   <header className="space-y-1">
                     <h2 className="text-2xl font-bold text-white">Sơ đồ luồng sự kiện (Event Flow Diagram)</h2>
@@ -1240,61 +1239,61 @@ export default function CaseInput() {
                   </div>
                 </section>
 
-              {/* Personas Panel */}
-              <section hidden={activeTab !== "personas"} className="space-y-8">
-                <header className="space-y-1">
-                  <h2 className="text-2xl font-bold text-white">
-                    Personas
-                  </h2>
-                  <p className="text-sm text-slate-300">
-                    Danh sách nhân vật và đặc điểm hành vi.
-                  </p>
-                </header>
-                <form className="space-y-8">
-                  {/* Basic Personas Fields */}
-                  <div className="grid gap-6 md:grid-cols-2 text-slate-300">
-                     <label className="block text-sm font-semibold uppercase tracking-wide">Case ID<input name="case_id" type="text" value={personas.case_id || ''} onChange={handleCaseIdChange} placeholder="Sẽ tự động đồng bộ" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                     <label className="block text-sm font-semibold uppercase tracking-wide">Số lượng persona (tham khảo)<input name="count" type="number" min="0" value={personas.count || 0} onChange={(e) => setPersonas(p => ({...p, count: e.target.value}))} placeholder="Ví dụ: 3" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xl font-semibold text-white">Danh sách Persona</h3>
-                      <button type="button" onClick={handleAddPersona} className="inline-flex items-center gap-2 rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-2 text-xs font-semibold text-primary-300 transition hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">
-                        + Thêm persona
-                      </button>
+                {/* Personas Panel */}
+                <section hidden={activeTab !== "personas"} className="space-y-8">
+                  <header className="space-y-1">
+                    <h2 className="text-2xl font-bold text-white">
+                      Personas
+                    </h2>
+                    <p className="text-sm text-slate-300">
+                      Danh sách nhân vật và đặc điểm hành vi.
+                    </p>
+                  </header>
+                  <form className="space-y-8">
+                    {/* Basic Personas Fields */}
+                    <div className="grid gap-6 md:grid-cols-2 text-slate-300">
+                      <label className="block text-sm font-semibold uppercase tracking-wide">Case ID<input name="case_id" type="text" value={personas.case_id || ''} onChange={handleCaseIdChange} placeholder="Sẽ tự động đồng bộ" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide">Số lượng persona (tham khảo)<input name="count" type="number" min="0" value={personas.count || 0} onChange={(e) => setPersonas(p => ({ ...p, count: e.target.value }))} placeholder="Ví dụ: 3" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
                     </div>
-                    <div className="space-y-6">
-                      {personas.personas.map((persona, index) => (
-                        <article key={index} className="space-y-6 rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-lg">
-                          <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-semibold text-slate-100">Persona #{index + 1}</h4>
-                            <button type="button" onClick={() => handleRemovePersona(index)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">Xóa</button>
-                          </div>
-                          <div className="grid gap-6 md:grid-cols-2 text-slate-300">
-                            <label className="block text-sm font-semibold uppercase tracking-wide">Persona ID<input name="id" type="text" value={persona.id || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="persona_01" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide">Tên nhân vật<input name="name" type="text" value={persona.name || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Tên hiển thị" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide">Vai trò<input name="role" type="text" value={persona.role || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Vai trò trong case" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide">Tuổi<input name="age" type="number" value={persona.age || ''} onChange={(e) => handlePersonaChange(e, index)} min="0" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide">Giới tính<input name="gender" type="text" value={persona.gender || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Nam / Nữ / Khác" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Lý lịch / hoàn cảnh<textarea name="background" rows="3" value={persona.background || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Thông tin nền của nhân vật" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Tính cách<textarea name="personality" rows="3" value={persona.personality || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Đặc điểm tính cách nổi bật" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Mục tiêu<textarea name="goal" rows="3" value={persona.goal || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Điều nhân vật muốn đạt được" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide">Speech pattern<input name="speech_pattern" type="text" value={persona.speech_pattern || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Phong cách giao tiếp" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide">Emotion ban đầu<input name="emotion_init" type="text" value={persona.emotion_init || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Cảm xúc khi bắt đầu tình huống" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Emotion trong quá trình<textarea name="emotion_during" rows="3" value={persona.emotion_during || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Mỗi dòng là một mốc cảm xúc" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide">Emotion kết thúc<input name="emotion_end" type="text" value={persona.emotion_end || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Cảm xúc khi kết thúc tình huống" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                            <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Voice tags<input name="voice_tags" type="text" value={persona.voice_tags || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Cách nhau bởi dấu phẩy" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                          </div>
-                        </article>
-                      ))}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xl font-semibold text-white">Danh sách Persona</h3>
+                        <button type="button" onClick={handleAddPersona} className="inline-flex items-center gap-2 rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-2 text-xs font-semibold text-primary-300 transition hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">
+                          + Thêm persona
+                        </button>
+                      </div>
+                      <div className="space-y-6">
+                        {personas.personas.map((persona, index) => (
+                          <article key={index} className="space-y-6 rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-lg">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-sm font-semibold text-slate-100">Persona #{index + 1}</h4>
+                              <button type="button" onClick={() => handleRemovePersona(index)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">Xóa</button>
+                            </div>
+                            <div className="grid gap-6 md:grid-cols-2 text-slate-300">
+                              <label className="block text-sm font-semibold uppercase tracking-wide">Persona ID<input name="id" type="text" value={persona.id || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="persona_01" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">Tên nhân vật<input name="name" type="text" value={persona.name || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Tên hiển thị" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">Vai trò<input name="role" type="text" value={persona.role || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Vai trò trong case" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">Tuổi<input name="age" type="number" value={persona.age || ''} onChange={(e) => handlePersonaChange(e, index)} min="0" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">Giới tính<input name="gender" type="text" value={persona.gender || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Nam / Nữ / Khác" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Lý lịch / hoàn cảnh<textarea name="background" rows="3" value={persona.background || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Thông tin nền của nhân vật" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Tính cách<textarea name="personality" rows="3" value={persona.personality || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Đặc điểm tính cách nổi bật" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Mục tiêu<textarea name="goal" rows="3" value={persona.goal || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Điều nhân vật muốn đạt được" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">Speech pattern<input name="speech_pattern" type="text" value={persona.speech_pattern || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Phong cách giao tiếp" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">Emotion ban đầu<input name="emotion_init" type="text" value={persona.emotion_init || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Cảm xúc khi bắt đầu tình huống" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Emotion trong quá trình<textarea name="emotion_during" rows="3" value={persona.emotion_during || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Mỗi dòng là một mốc cảm xúc" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">Emotion kết thúc<input name="emotion_end" type="text" value={persona.emotion_end || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Cảm xúc khi kết thúc tình huống" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Voice tags<input name="voice_tags" type="text" value={persona.voice_tags || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Cách nhau bởi dấu phẩy" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
                     </div>
-                  </div>
 
-                </form>
-              </section>
-            </div>
-          </section>
-        </div>
+                  </form>
+                </section>
+              </div>
+            </section>
+          </div>
         </main>
       </div>
 
@@ -1411,7 +1410,7 @@ export default function CaseInput() {
   );
 }
 
-const FlowDiagram = ({ skeleton }) => { 
+const FlowDiagram = ({ skeleton }) => {
   const { nodes, edges } = useMemo(() => {
     const initialNodes = [];
     const initialEdges = [];
@@ -1437,29 +1436,31 @@ const FlowDiagram = ({ skeleton }) => {
       initialNodes.push({
         id: event.id || `node-${index}`,
         position: { x: (nodeWidth + horizontalGap) * (index % 3), y: (nodeHeight + verticalGap) * Math.floor(index / 3) },
-        data: { label: (
-          <div className="p-2 text-left">
-            <div className="font-bold text-base text-white bg-primary-600 -m-2 p-2 rounded-t-lg">{event.id || `Event #${index + 1}`}</div>
-            <div className="p-2">
-              <div className="text-sm text-slate-200 mb-2">{event.title || '(Chưa có tiêu đề)'}</div>
-              {/* Hiển thị các nhánh retry hoặc không nối được */}
-              {Object.entries(event.on_score_branches || {}).map(([score, targetId]) => {
-                const isRetry = parseInt(score, 10) <= 2;                
-                return isRetry ? (
-                  <div key={score} className="text-xs mt-1 p-1 bg-rose-500/20 rounded-md border border-rose-500/30">
-                    <span className="font-bold text-rose-300">
-                      🔄 Điểm {score} ➜
-                    </span>{' '}
-                    <span className="text-rose-400 italic">
-                      {targetId || '(không có đích)'}
-                    </span>
-                  </div>
-                ) : null
-              })}
+        data: {
+          label: (
+            <div className="p-2 text-left">
+              <div className="font-bold text-base text-white bg-primary-600 -m-2 p-2 rounded-t-lg">{event.id || `Event #${index + 1}`}</div>
+              <div className="p-2">
+                <div className="text-sm text-slate-200 mb-2">{event.title || '(Chưa có tiêu đề)'}</div>
+                {/* Hiển thị các nhánh retry hoặc không nối được */}
+                {Object.entries(event.on_score_branches || {}).map(([score, targetId]) => {
+                  const isRetry = parseInt(score, 10) <= 2;
+                  return isRetry ? (
+                    <div key={score} className="text-xs mt-1 p-1 bg-rose-500/20 rounded-md border border-rose-500/30">
+                      <span className="font-bold text-rose-300">
+                        🔄 Điểm {score} ➜
+                      </span>{' '}
+                      <span className="text-rose-400 italic">
+                        {targetId || '(không có đích)'}
+                      </span>
+                    </div>
+                  ) : null
+                })}
+              </div>
             </div>
-          </div>
-        )},
-        style: { 
+          )
+        },
+        style: {
           background: '#1e293b', // slate-800,
           color: '#f1f5f9', // slate-100
           border: '1px solid #475569', // slate-600
@@ -1467,7 +1468,7 @@ const FlowDiagram = ({ skeleton }) => {
           width: nodeWidth,
         },
       });
-      
+
       if (initialNodes[initialNodes.length - 1].position.y > maxNodeY) {
         maxNodeY = initialNodes[initialNodes.length - 1].position.y;
       }
@@ -1500,7 +1501,7 @@ const FlowDiagram = ({ skeleton }) => {
         }, {});
 
         // Tạo một edge cho mỗi nhóm target
-        Object.entries(branchesByTarget).forEach(([targetId, scoreGroups]) => { 
+        Object.entries(branchesByTarget).forEach(([targetId, scoreGroups]) => {
           const hasSuccessEdge = scoreGroups.success.length > 0;
 
           // Xử lý nhánh thành công (Success)
@@ -1530,7 +1531,7 @@ const FlowDiagram = ({ skeleton }) => {
     initialNodes.push({
       id: finishNodeId,
       position: { x: nodeWidth + horizontalGap, y: maxNodeY + nodeHeight + verticalGap },
-      data: { 
+      data: {
         label: (
           <div className="p-4 text-center">
             <div className="font-bold text-lg text-white">{finishNodeId}</div>

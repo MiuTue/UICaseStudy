@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Footer from '../../components/Footer';
 import { backgroundImage2 } from '../../Image/image';
 
@@ -8,6 +9,7 @@ export default function User() {
   const [histories, setHistories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function fetchHistories() {
@@ -22,7 +24,7 @@ export default function User() {
         });
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.message || 'Lỗi lấy lịch sử case');
+          throw new Error(data.message || t('user.error_fetch_history'));
         }
         const data = await res.json();
         setHistories(data);
@@ -33,7 +35,7 @@ export default function User() {
       }
     }
     fetchHistories();
-  }, []);
+  }, [t]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -55,10 +57,10 @@ export default function User() {
           <header className="mb-12 flex flex-wrap items-center justify-between gap-6">
             <div className="max-w-xl">
               <h1 className="text-4xl font-black text-white drop-shadow-lg">
-                Dashboard
+                {t('user.dashboard')}
               </h1>
               <p className="mt-2 text-lg text-slate-300">
-                Chào mừng trở lại! Đây là trung tâm điều khiển của bạn.
+                {t('user.welcome_msg')}
               </p>
             </div>
             <button
@@ -68,7 +70,7 @@ export default function User() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V5h10a1 1 0 100-2H3zm12.293 4.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L16.586 13H7a1 1 0 110-2h9.586l-1.293-1.293a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
-              Đăng xuất
+              {t('navbar.logout')}
             </button>
           </header>
 
@@ -78,25 +80,25 @@ export default function User() {
             <div className="flex flex-col gap-8 lg:col-span-1">
               {/* Total Cases Widget */}
               <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-6 shadow-lg">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Thống kê</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">{t('user.stats')}</h3>
                 <p className="mt-2 text-4xl font-black text-white">{histories.length}</p>
-                <p className="text-slate-300">Case đã hoàn thành</p>
+                <p className="text-slate-300">{t('user.cases_completed')}</p>
               </div>
 
               {/* Quick Actions */}
               <Link to="/case-list" className="group block rounded-2xl border border-slate-700 bg-slate-800/50 p-6 shadow-lg transition-all duration-300 hover:border-primary-500/70 hover:bg-slate-700/50">
-                <h3 className="text-lg font-bold text-primary-400">Tới thư viện Case</h3>
-                <p className="mt-1 text-sm text-slate-300">Khám phá và bắt đầu các tình huống mô phỏng.</p>
+                <h3 className="text-lg font-bold text-primary-400">{t('user.go_to_library')}</h3>
+                <p className="mt-1 text-sm text-slate-300">{t('user.library_desc')}</p>
               </Link>
               <Link to="/case-input" className="group block rounded-2xl border border-slate-700 bg-slate-800/50 p-6 shadow-lg transition-all duration-300 hover:border-emerald-500/70 hover:bg-slate-700/50">
-                <h3 className="text-lg font-bold text-emerald-400">Tạo Case mới</h3>
-                <p className="mt-1 text-sm text-slate-300">Nhập liệu hoặc sinh tự động một tình huống mới.</p>
+                <h3 className="text-lg font-bold text-emerald-400">{t('user.create_case')}</h3>
+                <p className="mt-1 text-sm text-slate-300">{t('user.create_case_desc')}</p>
               </Link>
             </div>
 
             {/* Right Column: User List */}
             <div className="rounded-2xl border border-slate-700 bg-slate-800/50 p-6 shadow-lg lg:col-span-2">
-              <h2 className="text-2xl font-bold text-white mb-6">📖 Lịch sử làm Case</h2>
+              <h2 className="text-2xl font-bold text-white mb-6">📖 {t('user.history_title')}</h2>
               {loading && (
                 <div className="flex justify-center items-center h-48">
                   <svg className="animate-spin h-8 w-8 text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -107,16 +109,16 @@ export default function User() {
               )}
               {err && (
                 <div className="bg-rose-900/50 border border-rose-500 text-rose-300 px-4 py-3 rounded-lg" role="alert">
-                  <strong className="font-bold">Lỗi: </strong>
+                  <strong className="font-bold">{t('user.error')}: </strong>
                   <span className="block sm:inline">{err}</span>
                 </div>
               )}
               {!loading && !err && (
                 <div className="space-y-4">
                   {histories.map((history) => (
-                    <Link 
-                      to={`/history/${history.sessionId}`} 
-                      key={history.sessionId} 
+                    <Link
+                      to={`/history/${history.sessionId}`}
+                      key={history.sessionId}
                       className="group flex items-center gap-4 rounded-lg bg-slate-900/50 p-4 transition-all duration-200 hover:bg-slate-700/50 hover:ring-2 hover:ring-primary-500"
                     >
                       {/* Icon */}
@@ -127,14 +129,14 @@ export default function User() {
                       </div>
                       {/* History Info */}
                       <div className="flex-1">
-                        <p className="font-semibold text-white">Case ID: {history.caseId}</p>
+                        <p className="font-semibold text-white">{t('user.case_id')}: {history.caseId}</p>
                         <p className="text-sm text-slate-400">
-                          Ngày làm: {new Date(history.createdAt).toLocaleString('vi-VN')}
+                          {t('user.date')}: {new Date(history.createdAt).toLocaleString('vi-VN')}
                         </p>
                       </div>
                       {/* Score */}
                       <div className="text-right">
-                        <p className="text-sm text-slate-400">Điểm</p>
+                        <p className="text-sm text-slate-400">{t('user.score')}</p>
                         <span className="text-2xl font-bold text-emerald-400">
                           {history.finalScore}
                         </span>
@@ -145,7 +147,7 @@ export default function User() {
               )}
               {!loading && !err && histories.length === 0 && (
                 <div className="text-center py-12">
-                  <p className="text-slate-400">Bạn chưa hoàn thành case nào.</p>
+                  <p className="text-slate-400">{t('user.no_history')}</p>
                 </div>
               )}
             </div>

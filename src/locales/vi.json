@@ -1,0 +1,172 @@
+{
+    "app_title": "Case Study TAT",
+    "sidebar": {
+        "dashboard": "Trang Chính",
+        "case_list": "Danh sách Case",
+        "input_case": "Nhập Case",
+        "logout": "Đăng xuất"
+    },
+    "navbar": {
+        "slogan": "Theo dõi & nâng tầm kỹ năng",
+        "about": "Giới thiệu",
+        "case_list": "Danh sách Case",
+        "login": "Đăng nhập",
+        "register": "Đăng ký",
+        "profile": "Trang cá nhân",
+        "logout": "Đăng xuất"
+    },
+    "footer": {
+        "slogan": "Nền tảng học tập thực chiến",
+        "description": "Giúp bạn nâng tầm kỹ năng qua các case thực tế.",
+        "products": "Sản phẩm",
+        "home": "Trang chủ",
+        "case_list": "Danh sách Case",
+        "leaderboard": "Leaderboard",
+        "resources": "Tài nguyên",
+        "guide": "Hướng dẫn",
+        "blog": "Blog",
+        "faq": "FAQ",
+        "contact": "Liên hệ",
+        "email": "Email",
+        "copyright": "© {{year}} Case Study TAT. Tất cả quyền được bảo lưu.",
+        "privacy": "Quyền riêng tư",
+        "terms": "Điều khoản",
+        "cookies": "Cookies"
+    },
+    "auth": {
+        "login_title": "Đăng nhập",
+        "register_title": "Đăng ký",
+        "email": "Email",
+        "password": "Mật khẩu",
+        "confirm_password": "Xác nhận mật khẩu",
+        "full_name": "Họ và tên",
+        "enter_email": "Nhập email...",
+        "enter_password": "Nhập mật khẩu...",
+        "enter_confirm_password": "Nhập lại mật khẩu...",
+        "enter_full_name": "Nhập họ tên...",
+        "forgot_password": "Quên mật khẩu?",
+        "login_button": "Đăng nhập",
+        "register_button": "Đăng ký",
+        "or_login_with": "hoặc đăng nhập bằng",
+        "or_register_with": "hoặc đăng ký bằng",
+        "login_success": "Đăng nhập thành công",
+        "login_failed": "Sai thông tin đăng nhập",
+        "register_success": "Đăng ký thành công!",
+        "register_failed": "Đăng ký thất bại",
+        "system_error": "Lỗi hệ thống",
+        "welcome_back": "Welcome Back",
+        "sign_in_subtitle": "Sign In to Your Account",
+        "sign_in_desc": "Access your personalized dashboard and continue your learning journey with CaseStudy Hub",
+        "join_us": "Join Us",
+        "create_account": "Create Your Account",
+        "join_desc": "Start your journey with CaseStudy Hub and unlock access to real-world case studies and learning opportunities",
+        "reset_password_title": "Reset Password",
+        "secure_account": "Secure Your Account",
+        "reset_desc": "Follow the steps to reset your password and regain access to your CaseStudy Hub account",
+        "forgot_password_title": "Quên Mật Khẩu",
+        "enter_code_title": "Nhập Mã Reset",
+        "new_password_title": "Mật Khẩu Mới",
+        "input_email_placeholder": "Nhập email của bạn...",
+        "error_send_code": "Không thể gửi mã reset",
+        "success_send_code": "Mã reset đã được gửi đến email của bạn",
+        "sending": "Đang gửi...",
+        "send_code_button": "Gửi Mã Reset",
+        "reset_code": "Mã Reset",
+        "code_placeholder": "Nhập mã 6 chữ số...",
+        "invalid_code": "Mã reset không hợp lệ",
+        "valid_code": "Mã reset hợp lệ. Vui lòng nhập mật khẩu mới",
+        "verifying": "Đang xác minh...",
+        "verify_button": "Xác Minh Mã",
+        "back_button": "Quay lại",
+        "new_password": "Mật Khẩu Mới",
+        "new_password_placeholder": "Nhập mật khẩu mới...",
+        "confirm_password_placeholder": "Nhập lại mật khẩu...",
+        "password_mismatch": "Mật khẩu xác nhận không khớp",
+        "password_too_short": "Mật khẩu phải có ít nhất 6 ký tự",
+        "reset_failed": "Không thể reset mật khẩu",
+        "reset_success": "Mật khẩu đã được cập nhật thành công!",
+        "updating": "Đang cập nhật...",
+        "update_password_button": "Cập Nhật Mật Khẩu",
+        "back_to_login": "← Quay lại đăng nhập"
+    },
+    "home": {
+        "hero": {
+            "subtitle": "Nền tảng học tập qua các case thực tế dành cho cộng đồng AI & Data Việt Nam",
+            "tat_team": "TAT Team",
+            "cta_button": "Xem Leaderboard và Case"
+        },
+        "features": {
+            "title": "Khám Phá Nền Tảng",
+            "subtitle": "Hai tính năng chính để phát triển kỹ năng của bạn",
+            "leaderboard": {
+                "title": "Leaderboards",
+                "desc": "Bảng xếp hạng theo thời gian thực ghi nhận thành tích của từng thành viên trên mọi case. Động lực lớn để cùng nhau bứt phá và trở thành những chuyên gia hàng đầu.",
+                "button": "Xem Leaderboard"
+            },
+            "case_library": {
+                "title": "Case Library",
+                "desc": "Kho case phong phú gom lại các bài toán đa dạng từ khoa học dữ liệu tới hệ thống AI sản xuất. Mỗi case được thiết kế để rèn luyện các kỹ năng thực tế mà thị trường cần.",
+                "button": "Xem Case Library"
+            }
+        },
+        "about": {
+            "title": "Về Team Phát Triển TAT",
+            "subtitle": "Sứ mệnh của chúng tôi là đưa các dự án nghiên cứu vào đời sống thông qua trải nghiệm học tập thực chiến.",
+            "value_prop_title": "Cách chúng tôi tạo ra giá trị",
+            "value_prop_desc": "TAT Team tập trung khai thác dữ liệu từ người dùng để tạo nên trải nghiệm học tập sinh động và được cập nhật liên tục, phù hợp với xu hướng công nghệ hiện đại."
+        },
+        "benefits": {
+            "title": "Phát triển kỹ năng toàn diện",
+            "subtitle": "Chúng tôi xây dựng nền tảng để giúp bạn không chỉ học kiến thức mà còn rèn luyện kỹ năng mềm cần thiết.",
+            "feature1": {
+                "title": "Học qua case thực tế",
+                "desc": "Nắm vững kiến thức thông qua các bài toán thực tiễn từ industry."
+            },
+            "feature2": {
+                "title": "Kết nối mentor & cộng đồng",
+                "desc": "Giao lưu với người đi trước và các chuyên gia giàu kinh nghiệm."
+            },
+            "feature3": {
+                "title": "Làm việc nhóm hiệu quả",
+                "desc": "Phát triển kỹ năng hợp tác và giao tiếp trong môi trường chuyên nghiệp."
+            },
+            "feature4": {
+                "title": "Cập nhật liên tục",
+                "desc": "Case mới được phát triển dựa trên nhu cầu thực tế của thị trường."
+            }
+        },
+        "cta": {
+            "button": "Bắt Đầu Hành Trình"
+        }
+    },
+    "user": {
+        "dashboard": "Dashboard",
+        "welcome_msg": "Chào mừng trở lại! Đây là trung tâm điều khiển của bạn.",
+        "stats": "Thống kê",
+        "cases_completed": "Case đã hoàn thành",
+        "go_to_library": "Tới thư viện Case",
+        "library_desc": "Khám phá và bắt đầu các tình huống mô phỏng.",
+        "create_case": "Tạo Case mới",
+        "create_case_desc": "Nhập liệu hoặc sinh tự động một tình huống mới.",
+        "history_title": "Lịch sử làm Case",
+        "error_fetch_history": "Lỗi lấy lịch sử case",
+        "error": "Lỗi",
+        "case_id": "Case ID",
+        "date": "Ngày làm",
+        "score": "Điểm",
+        "no_history": "Bạn chưa hoàn thành case nào."
+    },
+    "caselist": {
+        "no_topic": "Không có chủ đề",
+        "hero_title": "Thư Viện Tình Huống",
+        "hero_desc": "Rèn luyện kỹ năng, đối mặt với thử thách và leo hạng trên leaderboard. Mỗi case là một bài toán thực tế đang chờ bạn giải quyết.",
+        "explore_now": "Khám phá ngay",
+        "all_cases": "Tất cả tình huống",
+        "select_case": "Chọn một tình huống dưới đây để bắt đầu mô phỏng.",
+        "no_cases": "⚠️ Không có tình huống nào. Hãy kiểm tra lại cấu hình.",
+        "case_label": "Case",
+        "sidebar_title": "Tất cả Case",
+        "loading": "Đang tải danh sách tình huống...",
+        "error_title": "Lỗi Tải Dữ Liệu"
+    }
+}

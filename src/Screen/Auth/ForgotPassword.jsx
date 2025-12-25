@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import NavBar from '../../components/NavBar.jsx';
 import Footer from '../../components/Footer.jsx';
 import { backgroundImage } from '../../Image/image.js';
@@ -16,6 +17,7 @@ export default function ForgotPassword() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleSendResetCode = async (e) => {
     e.preventDefault();
@@ -33,14 +35,14 @@ export default function ForgotPassword() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErr(data.message || 'Không thể gửi mã reset');
+        setErr(data.message || t('auth.error_send_code'));
         return;
       }
 
-      setSuccess('Mã reset đã được gửi đến email của bạn');
+      setSuccess(t('auth.success_send_code'));
       setStep(2);
     } catch (err) {
-      setErr('Lỗi hệ thống');
+      setErr(t('auth.system_error'));
     } finally {
       setLoading(false);
     }
@@ -62,14 +64,14 @@ export default function ForgotPassword() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErr(data.message || 'Mã reset không hợp lệ');
+        setErr(data.message || t('auth.invalid_code'));
         return;
       }
 
-      setSuccess('Mã reset hợp lệ. Vui lòng nhập mật khẩu mới');
+      setSuccess(t('auth.valid_code'));
       setStep(3);
     } catch (err) {
-      setErr('Lỗi hệ thống');
+      setErr(t('auth.system_error'));
     } finally {
       setLoading(false);
     }
@@ -81,12 +83,12 @@ export default function ForgotPassword() {
     setSuccess('');
 
     if (newPassword !== confirmPassword) {
-      setErr('Mật khẩu xác nhận không khớp');
+      setErr(t('auth.password_mismatch'));
       return;
     }
 
     if (newPassword.length < 6) {
-      setErr('Mật khẩu phải có ít nhất 6 ký tự');
+      setErr(t('auth.password_too_short'));
       return;
     }
 
@@ -102,16 +104,16 @@ export default function ForgotPassword() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErr(data.message || 'Không thể reset mật khẩu');
+        setErr(data.message || t('auth.reset_failed'));
         return;
       }
 
-      setSuccess('Mật khẩu đã được cập nhật thành công!');
+      setSuccess(t('auth.reset_success'));
       setTimeout(() => {
         navigate('/login');
       }, 2000);
     } catch (err) {
-      setErr('Lỗi hệ thống');
+      setErr(t('auth.system_error'));
     } finally {
       setLoading(false);
     }
@@ -119,7 +121,7 @@ export default function ForgotPassword() {
 
   return (
     <div>
-      <NavBar/>
+      <NavBar />
       <div
         className="min-h-screen w-full flex flex-col md:flex-row items-stretch justify-stretch"
         style={{
@@ -131,14 +133,14 @@ export default function ForgotPassword() {
       >
         {/* Khung chào mừng - bên trái */}
         <div className="w-full md:w-9/15 flex flex-col items-center justify-center p-10 min-h-[420px] backdrop-blur-sm">
-          <div className="text-5xl md:text-6xl lg:text-7xl font-extrabold uppercase text-white text-center drop-shadow-2xl leading-tight mb-6" style={{opacity: 0.85}}>
-            Reset Password <br />
+          <div className="text-5xl md:text-6xl lg:text-7xl font-extrabold uppercase text-white text-center drop-shadow-2xl leading-tight mb-6" style={{ opacity: 0.85 }}>
+            {t('auth.reset_password_title')} <br />
           </div>
-          <div className="text-xl md:text-2xl text-white/80 font-semibold tracking-widest uppercase text-center mb-8" style={{opacity: 0.8}}>
-            Secure Your Account
+          <div className="text-xl md:text-2xl text-white/80 font-semibold tracking-widest uppercase text-center mb-8" style={{ opacity: 0.8 }}>
+            {t('auth.secure_account')}
           </div>
-          <div className="text-lg text-white/70 text-center max-w-md mb-8" style={{opacity: 0.9}}>
-            Follow the steps to reset your password and regain access to your CaseStudy Hub account
+          <div className="text-lg text-white/70 text-center max-w-md mb-8" style={{ opacity: 0.9 }}>
+            {t('auth.reset_desc')}
           </div>
         </div>
 
@@ -146,21 +148,21 @@ export default function ForgotPassword() {
         <div className="w-full md:6/15 flex items-center justify-center p-6 md:p-16 min-h-[420px] backdrop-blur-sm">
           <div className="w-full max-w-md bg-white/80 rounded-xl shadow-2xl p-8 md:p-10 bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-70">
             <h2 className="text-3xl font-bold text-center text-slate-900 mb-8 uppercase tracking-widest">
-              {step === 1 && 'Quên Mật Khẩu'}
-              {step === 2 && 'Nhập Mã Reset'}
-              {step === 3 && 'Mật Khẩu Mới'}
+              {step === 1 && t('auth.forgot_password_title')}
+              {step === 2 && t('auth.enter_code_title')}
+              {step === 3 && t('auth.new_password_title')}
             </h2>
 
             {/* Step 1: Email Input */}
             {step === 1 && (
               <form onSubmit={handleSendResetCode}>
                 <div className="mb-6">
-                  <label className="block text-slate-900 font-semibold mb-2">Email</label>
+                  <label className="block text-slate-900 font-semibold mb-2">{t('auth.email')}</label>
                   <input
                     className="w-full px-4 py-3 rounded-lg bg-white/70 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-300 text-lg"
                     type="email"
                     required
-                    placeholder="Nhập email của bạn..."
+                    placeholder={t('auth.input_email_placeholder')}
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                   />
@@ -172,7 +174,7 @@ export default function ForgotPassword() {
                   disabled={loading}
                   className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 border-2 border-primary-600 text-white font-extrabold rounded-full shadow-lg transition-all duration-300 text-lg uppercase tracking-widest hover:from-primary-600 hover:to-primary-700 hover:shadow-xl hover:scale-105 focus:outline-none mb-4 disabled:opacity-50"
                 >
-                  {loading ? 'Đang gửi...' : 'Gửi Mã Reset'}
+                  {loading ? t('auth.sending') : t('auth.send_code_button')}
                 </button>
               </form>
             )}
@@ -181,12 +183,12 @@ export default function ForgotPassword() {
             {step === 2 && (
               <form onSubmit={handleVerifyCode}>
                 <div className="mb-6">
-                  <label className="block text-slate-900 font-semibold mb-2">Mã Reset</label>
+                  <label className="block text-slate-900 font-semibold mb-2">{t('auth.reset_code')}</label>
                   <input
                     className="w-full px-4 py-3 rounded-lg bg-white/70 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-300 text-lg text-center tracking-widest"
                     type="text"
                     required
-                    placeholder="Nhập mã 6 chữ số..."
+                    placeholder={t('auth.code_placeholder')}
                     value={resetCode}
                     onChange={e => setResetCode(e.target.value)}
                     maxLength="6"
@@ -199,14 +201,14 @@ export default function ForgotPassword() {
                   disabled={loading}
                   className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 border-2 border-primary-600 text-white font-extrabold rounded-full shadow-lg transition-all duration-300 text-lg uppercase tracking-widest hover:from-primary-600 hover:to-primary-700 hover:shadow-xl hover:scale-105 focus:outline-none mb-4 disabled:opacity-50"
                 >
-                  {loading ? 'Đang xác minh...' : 'Xác Minh Mã'}
+                  {loading ? t('auth.verifying') : t('auth.verify_button')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(1)}
                   className="w-full py-2 text-primary-600 hover:text-primary-800 text-sm font-medium"
                 >
-                  Quay lại
+                  {t('auth.back_button')}
                 </button>
               </form>
             )}
@@ -215,13 +217,13 @@ export default function ForgotPassword() {
             {step === 3 && (
               <form onSubmit={handleResetPassword}>
                 <div className="mb-6">
-                  <label className="block text-slate-900 font-semibold mb-2">Mật Khẩu Mới</label>
+                  <label className="block text-slate-900 font-semibold mb-2">{t('auth.new_password')}</label>
                   <div className="relative">
                     <input
                       className="w-full px-4 py-3 pr-12 rounded-lg bg-white/70 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-300 text-lg"
                       type={showNewPassword ? "text" : "password"}
                       required
-                      placeholder="Nhập mật khẩu mới..."
+                      placeholder={t('auth.new_password_placeholder')}
                       value={newPassword}
                       onChange={e => setNewPassword(e.target.value)}
                     />
@@ -244,13 +246,13 @@ export default function ForgotPassword() {
                   </div>
                 </div>
                 <div className="mb-6">
-                  <label className="block text-slate-900 font-semibold mb-2">Xác Nhận Mật Khẩu</label>
+                  <label className="block text-slate-900 font-semibold mb-2">{t('auth.confirm_password')}</label>
                   <div className="relative">
                     <input
                       className="w-full px-4 py-3 pr-12 rounded-lg bg-white/70 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-300 text-lg"
                       type={showConfirmPassword ? "text" : "password"}
                       required
-                      placeholder="Nhập lại mật khẩu..."
+                      placeholder={t('auth.confirm_password_placeholder')}
                       value={confirmPassword}
                       onChange={e => setConfirmPassword(e.target.value)}
                     />
@@ -279,7 +281,7 @@ export default function ForgotPassword() {
                   disabled={loading}
                   className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 border-2 border-primary-600 text-white font-extrabold rounded-full shadow-lg transition-all duration-300 text-lg uppercase tracking-widest hover:from-primary-600 hover:to-primary-700 hover:shadow-xl hover:scale-105 focus:outline-none mb-4 disabled:opacity-50"
                 >
-                  {loading ? 'Đang cập nhật...' : 'Cập Nhật Mật Khẩu'}
+                  {loading ? t('auth.updating') : t('auth.update_password_button')}
                 </button>
               </form>
             )}
@@ -290,13 +292,13 @@ export default function ForgotPassword() {
                 onClick={() => navigate('/login')}
                 className="text-primary-600 hover:text-primary-800 text-sm font-medium"
               >
-                ← Quay lại đăng nhập
+                {t('auth.back_to_login')}
               </button>
             </div>
           </div>
         </div>
       </div>
-      <Footer/>
+      <Footer />
     </div>
   );
 }

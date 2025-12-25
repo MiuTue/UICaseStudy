@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import NavBar from '../../components/NavBar.jsx';
 import Footer from '../../components/Footer.jsx';
 import { backgroundImage, img_home1 } from '../../Image/image.js';
@@ -13,6 +14,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [err, setErr] = useState('');
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -23,7 +25,7 @@ export default function Register() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-  
+
       let data;
       try {
         data = await res.json();
@@ -32,24 +34,24 @@ export default function Register() {
         setErr('Phản hồi server không hợp lệ (không phải JSON)');
         return;
       }
-  
+
       if (!res.ok) {
         console.error('Đăng ký thất bại:', data);
         setErr(data.message || 'Error occurred');
         return;
       }
       console.log('Đăng ký thành công:', data);
-      alert('Đăng ký thành công!');
+      alert(t('auth.register_success'));
       navigate('/login');
     } catch (err) {
       console.error('Lỗi khi gửi đăng ký:', err);
-      setErr('Lỗi hệ thống');
+      setErr(t('auth.system_error'));
     }
   };
 
   return (
     <div>
-      <NavBar/>
+      <NavBar />
       <div
         className="min-h-screen w-full flex flex-col md:flex-row items-stretch justify-stretch"
         style={{
@@ -61,14 +63,14 @@ export default function Register() {
       >
         {/* Khung chào mừng - bên trái */}
         <div className="w-full md:w-9/15 flex flex-col items-center justify-center p-10 min-h-[420px] backdrop-blur-sm">
-          <div className="text-9xl md:text-6xl lg:text-7xl font-extrabold uppercase text-white text-center drop-shadow-2xl leading-tight mb-6" style={{opacity: 0.85}}>
-            Join Us <br />
+          <div className="text-9xl md:text-6xl lg:text-7xl font-extrabold uppercase text-white text-center drop-shadow-2xl leading-tight mb-6" style={{ opacity: 0.85 }}>
+            {t('auth.join_us')} <br />
           </div>
-          <div className="text-4xl md:text-2xl text-white/80 font-semibold tracking-widest uppercase text-center mb-8" style={{opacity: 0.8}}>
-            Create Your Account
+          <div className="text-4xl md:text-2xl text-white/80 font-semibold tracking-widest uppercase text-center mb-8" style={{ opacity: 0.8 }}>
+            {t('auth.create_account')}
           </div>
-          <div className="text-lg text-white/70 text-center max-w-md mb-8" style={{opacity: 0.9}}>
-            Start your journey with CaseStudy Hub and unlock access to real-world case studies and learning opportunities
+          <div className="text-lg text-white/70 text-center max-w-md mb-8" style={{ opacity: 0.9 }}>
+            {t('auth.join_desc')}
           </div>
           <div className="flex justify-center">
             <img
@@ -82,38 +84,38 @@ export default function Register() {
         <div className="w-full md:6/15 flex items-center justify-center p-6 md:p-16 min-h-[420px] backdrop-blur-sm">
           <form className="w-full max-w-md bg-white/80 rounded-xl shadow-2xl p-8 md:p-10 bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-70" onSubmit={handleRegister}>
             <h2 className="text-3xl font-bold text-center text-slate-900 mb-8 uppercase tracking-widest">
-              Đăng ký
+              {t('auth.register_title')}
             </h2>
             <div className="mb-6">
-              <label className="block text-slate-900 font-semibold mb-2">Họ và tên</label>
+              <label className="block text-slate-900 font-semibold mb-2">{t('auth.full_name')}</label>
               <input
                 className="w-full px-4 py-3 rounded-lg bg-white/70 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-300 text-lg"
                 type="text"
                 required
-                placeholder="Nhập họ tên..."
+                placeholder={t('auth.enter_full_name')}
                 value={name}
                 onChange={e => setName(e.target.value)}
               />
             </div>
             <div className="mb-6">
-              <label className="block text-slate-900 font-semibold mb-2">Email</label>
+              <label className="block text-slate-900 font-semibold mb-2">{t('auth.email')}</label>
               <input
                 className="w-full px-4 py-3 rounded-lg bg-white/70 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-300 text-lg"
                 type="email"
                 required
-                placeholder="Nhập email..."
+                placeholder={t('auth.enter_email')}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
               />
             </div>
             <div className="mb-6">
-              <label className="block text-slate-900 font-semibold mb-2">Mật khẩu</label>
+              <label className="block text-slate-900 font-semibold mb-2">{t('auth.password')}</label>
               <div className="relative">
                 <input
                   className="w-full px-4 py-3 pr-12 rounded-lg bg-white/70 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-300 text-lg"
                   type={showPassword ? "text" : "password"}
                   required
-                  placeholder="Nhập mật khẩu..."
+                  placeholder={t('auth.enter_password')}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                 />
@@ -136,13 +138,13 @@ export default function Register() {
               </div>
             </div>
             <div className="mb-6">
-              <label className="block text-slate-900 font-semibold mb-2">Xác nhận mật khẩu</label>
+              <label className="block text-slate-900 font-semibold mb-2">{t('auth.confirm_password')}</label>
               <div className="relative">
                 <input
                   className="w-full px-4 py-3 pr-12 rounded-lg bg-white/70 border border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-300 text-lg"
                   type={showConfirmPassword ? "text" : "password"}
                   required
-                  placeholder="Nhập lại mật khẩu..."
+                  placeholder={t('auth.enter_confirm_password')}
                   value={confirm}
                   onChange={e => setConfirm(e.target.value)}
                 />
@@ -165,13 +167,13 @@ export default function Register() {
               </div>
             </div>
 
-                    {err && <div className="text-red-600 mb-4">{err}</div>}
-                <button type="submit" className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 border-2 border-primary-600 text-white font-extrabold rounded-full shadow-lg transition-all duration-300 text-lg uppercase tracking-widest hover:from-primary-600 hover:to-primary-700 hover:shadow-xl hover:scale-105 focus:outline-none mb-4">Đăng ký</button>
-      
+            {err && <div className="text-red-600 mb-4">{err}</div>}
+            <button type="submit" className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 border-2 border-primary-600 text-white font-extrabold rounded-full shadow-lg transition-all duration-300 text-lg uppercase tracking-widest hover:from-primary-600 hover:to-primary-700 hover:shadow-xl hover:scale-105 focus:outline-none mb-4">{t('auth.register_button')}</button>
+
             {/* Các nút đăng ký mạng xã hội */}
             <div className="flex items-center my-6">
               <div className="flex-grow h-px bg-slate-300"></div>
-              <span className="mx-2 text-slate-500 text-sm font-semibold uppercase">hoặc đăng ký bằng</span>
+              <span className="mx-2 text-slate-500 text-sm font-semibold uppercase">{t('auth.or_register_with')}</span>
               <div className="flex-grow h-px bg-slate-300"></div>
             </div>
             <div className="flex justify-center gap-4">
@@ -187,8 +189,7 @@ export default function Register() {
           </form>
         </div>
       </div>
-    <Footer/>  
-
+      <Footer />
     </div>
   );
 }

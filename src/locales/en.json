@@ -1,0 +1,172 @@
+{
+    "app_title": "Case Study TAT",
+    "sidebar": {
+        "dashboard": "Dashboard",
+        "case_list": "Case List",
+        "input_case": "Input Case",
+        "logout": "Logout"
+    },
+    "navbar": {
+        "slogan": "Track & Elevate Your Skills",
+        "about": "About",
+        "case_list": "Case List",
+        "login": "Login",
+        "register": "Register",
+        "profile": "Profile",
+        "logout": "Logout"
+    },
+    "footer": {
+        "slogan": "Practical Learning Platform",
+        "description": "Helping you elevate your skills through real-world cases.",
+        "products": "Products",
+        "home": "Home",
+        "case_list": "Case List",
+        "leaderboard": "Leaderboard",
+        "resources": "Resources",
+        "guide": "Guide",
+        "blog": "Blog",
+        "faq": "FAQ",
+        "contact": "Contact",
+        "email": "Email",
+        "copyright": "© {{year}} Case Study TAT. All rights reserved.",
+        "privacy": "Privacy",
+        "terms": "Terms",
+        "cookies": "Cookies"
+    },
+    "auth": {
+        "login_title": "Login",
+        "register_title": "Register",
+        "email": "Email",
+        "password": "Password",
+        "confirm_password": "Confirm Password",
+        "full_name": "Full Name",
+        "enter_email": "Enter email...",
+        "enter_password": "Enter password...",
+        "enter_confirm_password": "Re-enter password...",
+        "enter_full_name": "Enter full name...",
+        "forgot_password": "Forgot password?",
+        "login_button": "Login",
+        "register_button": "Register",
+        "or_login_with": "or login with",
+        "or_register_with": "or register with",
+        "login_success": "Login successful",
+        "login_failed": "Invalid login credentials",
+        "register_success": "Registration successful!",
+        "register_failed": "Registration failed",
+        "system_error": "System error",
+        "welcome_back": "Welcome Back",
+        "sign_in_subtitle": "Sign In to Your Account",
+        "sign_in_desc": "Access your personalized dashboard and continue your learning journey with CaseStudy Hub",
+        "join_us": "Join Us",
+        "create_account": "Create Your Account",
+        "join_desc": "Start your journey with CaseStudy Hub and unlock access to real-world case studies and learning opportunities",
+        "reset_password_title": "Reset Password",
+        "secure_account": "Secure Your Account",
+        "reset_desc": "Follow the steps to reset your password and regain access to your CaseStudy Hub account",
+        "forgot_password_title": "Forgot Password",
+        "enter_code_title": "Enter Reset Code",
+        "new_password_title": "New Password",
+        "input_email_placeholder": "Enter your email...",
+        "error_send_code": "Unable to send reset code",
+        "success_send_code": "Reset code has been sent to your email",
+        "sending": "Sending...",
+        "send_code_button": "Send Reset Code",
+        "reset_code": "Reset Code",
+        "code_placeholder": "Enter 6-digit code...",
+        "invalid_code": "Invalid reset code",
+        "valid_code": "Valid reset code. Please enter new password",
+        "verifying": "Verifying...",
+        "verify_button": "Verify Code",
+        "back_button": "Back",
+        "new_password": "New Password",
+        "new_password_placeholder": "Enter new password...",
+        "confirm_password_placeholder": "Re-enter new password...",
+        "password_mismatch": "Passwords do not match",
+        "password_too_short": "Password must be at least 6 characters",
+        "reset_failed": "Unable to reset password",
+        "reset_success": "Password updated successfully!",
+        "updating": "Updating...",
+        "update_password_button": "Update Password",
+        "back_to_login": "← Back to Login"
+    },
+    "home": {
+        "hero": {
+            "subtitle": "Learning platform through real-world cases for the Vietnam AI & Data community",
+            "tat_team": "TAT Team",
+            "cta_button": "View Leaderboard and Cases"
+        },
+        "features": {
+            "title": "Explore the Platform",
+            "subtitle": "Two main features to develop your skills",
+            "leaderboard": {
+                "title": "Leaderboards",
+                "desc": "Real-time leaderboards tracking member achievements on every case. Great motivation to break through together and become top experts.",
+                "button": "View Leaderboard"
+            },
+            "case_library": {
+                "title": "Case Library",
+                "desc": "A rich repository of cases ranging from data science to production AI systems. Each case is designed to train practical skills needed by the market.",
+                "button": "View Case Library"
+            }
+        },
+        "about": {
+            "title": "About TAT Development Team",
+            "subtitle": "Our mission is to bring research projects to life through practical learning experiences.",
+            "value_prop_title": "How We Create Value",
+            "value_prop_desc": "TAT Team focuses on leveraging user data to create vivid, continuously updated learning experiences aligned with modern technology trends."
+        },
+        "benefits": {
+            "title": "Comprehensive Skill Development",
+            "subtitle": "We build a platform to help you not only learn knowledge but also practice essential soft skills.",
+            "feature1": {
+                "title": "Learn through Real Cases",
+                "desc": "Master knowledge through practical problems from the industry."
+            },
+            "feature2": {
+                "title": "Connect with Mentors & Community",
+                "desc": "Network with predecessors and experienced experts."
+            },
+            "feature3": {
+                "title": "Effective Teamwork",
+                "desc": "Develop collaboration and communication skills in a professional environment."
+            },
+            "feature4": {
+                "title": "Continuously Updated",
+                "desc": "New cases are developed based on real market needs."
+            }
+        },
+        "cta": {
+            "button": "Start The Journey"
+        }
+    },
+    "user": {
+        "dashboard": "Dashboard",
+        "welcome_msg": "Welcome back! This is your control center.",
+        "stats": "Statistics",
+        "cases_completed": "Cases Completed",
+        "go_to_library": "Go to Case Library",
+        "library_desc": "Explore and start simulation cases.",
+        "create_case": "Create New Case",
+        "create_case_desc": "Input data or auto-generate a new case.",
+        "history_title": "Case History",
+        "error_fetch_history": "Error fetching case history",
+        "error": "Error",
+        "case_id": "Case ID",
+        "date": "Date",
+        "score": "Score",
+        "no_history": "You haven't completed any cases yet."
+    },
+    "caselist": {
+        "no_topic": "No topic",
+        "hero_title": "Case Library",
+        "hero_desc": "Practice skills, face challenges and climb the leaderboard. Each case is a real-world problem waiting for you to solve.",
+        "explore_now": "Explore Now",
+        "all_cases": "All Cases",
+        "select_case": "Select a case below to start simulation.",
+        "no_cases": "⚠️ No cases available. Please check configuration.",
+        "case_label": "Case",
+        "sidebar_title": "All Cases",
+        "loading": "Loading cases...",
+        "error_title": "Error Loading Data"
+    }
+}

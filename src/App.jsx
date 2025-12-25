@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import './i18n'; // Import i18n config
 import { Routes, Route, Navigate, useLocation, Outlet } from 'react-router-dom'
 import Home from './Screen/Auth/Home'
 import SideBar from './components/SideBar' // Import SideBar
@@ -11,11 +12,28 @@ import CaseRunner from './Screen/App/CaseRunner'
 import CaseInput from './Screen/App/CaseInput'
 import User from './Screen/App/User'
 
+function checkTokenExpiration(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    const { exp } = JSON.parse(jsonPayload);
+    if (!exp) return false;
+    return Date.now() >= exp * 1000;
+  } catch (e) {
+    return true;
+  }
+}
+
 function RequireAuth({ children }) {
   const token = localStorage.getItem('token')
   const location = useLocation();
-  if (!token) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+
+  if (!token || checkTokenExpiration(token)) {
+    if (token) localStorage.removeItem('token'); // Clear expired token
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   return children;
 }
@@ -37,8 +55,8 @@ function AuthenticatedLayout() {
     <div className="flex">
       <SideBar isCollapsed={isCollapsed} setCollapsed={setCollapsed} />
       {/* Nội dung chính sẽ được đẩy sang phải để không bị che bởi sidebar */}
-      <main 
-        className="flex-1 transition-all duration-300 ease-in-out" 
+      <main
+        className="flex-1 transition-all duration-300 ease-in-out"
         style={{ marginLeft: isCollapsed ? '80px' : '250px' }}>
         <Outlet /> {/* Đây là nơi các component con (User, CaseList,...) sẽ được render */}
       </main>

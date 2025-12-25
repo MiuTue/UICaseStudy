@@ -2,10 +2,13 @@ import React from 'react';
 import { Sidebar, Menu, MenuItem, SubMenu } from 'react-pro-sidebar';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaTachometerAlt, FaList, FaPlusSquare, FaSignOutAlt, FaAngleLeft, FaAngleRight } from 'react-icons/fa';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const SideBar = ({ isCollapsed, setCollapsed }) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     // Hàm để kiểm tra xem một link có active hay không
     const isActive = (path) => location.pathname === path;
@@ -41,6 +44,9 @@ const SideBar = ({ isCollapsed, setCollapsed }) => {
                                 <h1 className="text-lg font-semibold text-white">Case Study TAT</h1>
                             )}
                         </Link>
+                        <div className="mt-4 flex justify-center">
+                            {!isCollapsed && <LanguageSwitcher />}
+                        </div>
                     </div>
 
                     {/* Phần Menu chính */}
@@ -60,22 +66,22 @@ const SideBar = ({ isCollapsed, setCollapsed }) => {
                             }}
                         >
                             <MenuItem active={isActive('/user')} icon={<FaTachometerAlt />} component={<Link to="/user" />}>
-                                Trang Chính
+                                {t('sidebar.dashboard')}
                             </MenuItem>
                             <MenuItem active={isActive('/case-list')} icon={<FaList />} component={<Link to="/case-list" />}>
-                                Danh sách Case
+                                {t('sidebar.case_list')}
                             </MenuItem>
                             <MenuItem active={isActive('/case-input')} icon={<FaPlusSquare />} component={<Link to="/case-input" />}>
-                                Nhập Case
+                                {t('sidebar.input_case')}
                             </MenuItem>
                         </Menu>
                     </div>
 
                     {/* Phần Footer của Sidebar - Nút Đăng xuất */}
                     <div className="border-t border-slate-700 p-2">
-                         <Menu menuItemStyles={{ button: { color: '#94a3b8', '&:hover': { background: 'linear-gradient(90deg, rgba(153, 27, 27, 0.3) 0%, rgba(153, 27, 27, 0) 100%)', color: '#fca5a5' } } }}>
+                        <Menu menuItemStyles={{ button: { color: '#94a3b8', '&:hover': { background: 'linear-gradient(90deg, rgba(153, 27, 27, 0.3) 0%, rgba(153, 27, 27, 0) 100%)', color: '#fca5a5' } } }}>
                             <MenuItem icon={<FaSignOutAlt />} onClick={handleLogout}>
-                                Đăng xuất
+                                {t('sidebar.logout')}
                             </MenuItem>
                         </Menu>
                     </div>

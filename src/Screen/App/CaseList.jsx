@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import Footer from '../../components/Footer'
 import NavBar from '../../components/NavBar'
 import { backgroundImage2 } from '../../Image/image'
 
 const ConveyorBelt = ({ cases, onCaseClick }) => {
+  const { t } = useTranslation();
   // Duplicate the list to create a seamless loop effect
   const extendedCases = [...cases, ...cases];
 
@@ -18,7 +20,7 @@ const ConveyorBelt = ({ cases, onCaseClick }) => {
             className="mb-4 p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-slate-200/10 cursor-pointer transition-all duration-300 hover:bg-primary-500/20 hover:border-primary-400/50"
           >
             <p className="font-bold text-sm text-white truncate drop-shadow-sm">{caseItem.case_id.replace(/_/g, ' ').toUpperCase()}</p>
-            <p className="text-xs text-slate-300 truncate">{caseItem.initial_context?.topic || caseItem.topic || 'Không có chủ đề'}</p> 
+            <p className="text-xs text-slate-300 truncate">{caseItem.initial_context?.topic || caseItem.topic || t('caselist.no_topic')}</p>
           </div>
         ))}
       </div>
@@ -59,6 +61,7 @@ export default function CaseList() {
   const [error, setError] = useState(null)
   const token = localStorage.getItem('token')
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     fetch('http://localhost:8000/api/cases')
@@ -85,7 +88,7 @@ export default function CaseList() {
     return (
       <div className="flex flex-col min-h-screen">
         <div className="flex-1 bg-slate-900 flex items-center justify-center">
-          <div className="text-center text-lg text-slate-400">Đang tải danh sách tình huống...</div>
+          <div className="text-center text-lg text-slate-400">{t('caselist.loading')}</div>
         </div>
         <Footer />
       </div>
@@ -98,7 +101,7 @@ export default function CaseList() {
         <div className="flex-1 bg-slate-900 flex items-center justify-center">
           <div className="max-w-2xl mx-auto px-4 py-8">
             <div className="bg-red-900/50 border-2 border-red-500 rounded-lg p-6 text-center">
-              <p className="text-red-300 mb-2 text-xl font-bold">❌ Lỗi Tải Dữ Liệu</p>
+              <p className="text-red-300 mb-2 text-xl font-bold">❌ {t('caselist.error_title')}</p>
               <p className="text-red-400">{error}</p>
             </div>
           </div>
@@ -111,7 +114,7 @@ export default function CaseList() {
   return (
     <div className="flex flex-col min-h-screen">
       {!token && <NavBar />} {/* Chỉ hiển thị NavBar nếu chưa đăng nhập */}
-      <div 
+      <div
         className="flex-1"
         style={{
           backgroundImage: `linear-gradient(rgba(20,30,50,0.85), rgba(20,30,50,0.95)), url(${backgroundImage2})`,
@@ -124,17 +127,17 @@ export default function CaseList() {
         <section className="h-[60vh] flex flex-col items-center justify-center text-center text-white p-6 relative">
           <div className="max-w-4xl">
             <h1 className="text-5xl md:text-6xl font-black tracking-tight drop-shadow-xl">
-              Thư Viện Tình Huống
+              {t('caselist.hero_title')}
             </h1>
             <p className="mt-6 text-lg md:text-xl text-slate-200 max-w-3xl mx-auto drop-shadow-lg">
-              Rèn luyện kỹ năng, đối mặt với thử thách và leo hạng trên leaderboard. Mỗi case là một bài toán thực tế đang chờ bạn giải quyết.
+              {t('caselist.hero_desc')}
             </p>
             <div className="mt-10">
-              <a 
-                href="#case-list-section" 
+              <a
+                href="#case-list-section"
                 className="inline-flex items-center gap-3 rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/50 px-8 py-4 text-lg font-semibold text-white transition-all duration-300 hover:bg-white hover:text-primary-600 hover:shadow-2xl"
               >
-                Khám phá ngay
+                {t('caselist.explore_now')}
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -150,22 +153,22 @@ export default function CaseList() {
               {/* Main Content */}
               <div className="lg:col-span-2">
                 <div className="mb-8 text-center lg:text-left">
-                  <h2 className="text-4xl font-black tracking-tight text-white mb-2 drop-shadow-lg">📋 Tất cả tình huống</h2>
-                  <p className="text-lg text-slate-300">Chọn một tình huống dưới đây để bắt đầu mô phỏng.</p>
+                  <h2 className="text-4xl font-black tracking-tight text-white mb-2 drop-shadow-lg">📋 {t('caselist.all_cases')}</h2>
+                  <p className="text-lg text-slate-300">{t('caselist.select_case')}</p>
                 </div>
 
                 {cases.length === 0 ? (
                   <div className="bg-slate-800/50 border-2 border-dashed border-slate-600 rounded-lg p-8 text-center">
-                    <p className="text-slate-400">⚠️ Không có tình huống nào. Hãy kiểm tra lại cấu hình.</p>
+                    <p className="text-slate-400">{t('caselist.no_cases')}</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {cases.map((caseItem) => {
                       const { case_id, initial_context, topic } = caseItem;
-                      const displayTopic = initial_context?.topic || topic || 'Không có chủ đề';
+                      const displayTopic = initial_context?.topic || topic || t('caselist.no_topic');
                       const CardContent = () => (
                         <>
-                          <span className="text-xl font-bold uppercase tracking-wide text-primary-300 text-cyan-50">🏥 Case</span>
+                          <span className="text-xl font-bold uppercase tracking-wide text-primary-300 text-cyan-50">🏥 {t('caselist.case_label')}</span>
                           <h3 className="mt-3 text-xl font-bold text-white drop-shadow-md">{case_id.replace(/_/g, ' ').toUpperCase()}</h3>
                           <p className="mt-2 text-sm text-slate-300">{displayTopic}</p>
                         </>
@@ -194,7 +197,7 @@ export default function CaseList() {
 
               {/* Conveyor Belt Sidebar */}
               <div className="hidden lg:block h-[calc(100vh-250px)] sticky top-24">
-                <h3 className="text-lg font-bold text-white mb-4 text-center">Tất cả Case</h3>
+                <h3 className="text-lg font-bold text-white mb-4 text-center">{t('caselist.sidebar_title')}</h3>
                 <ConveyorBelt cases={cases} onCaseClick={handleCaseClick} />
               </div>
             </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import Footer from "../../components/Footer";
 import { backgroundImage2 } from "../../Image/image";
 import { storage, firestore } from "../../config/firebase"; // Import firestore
@@ -19,6 +20,7 @@ async function uploadImage(file, caseId = '') {
 
 
 export default function CaseInput() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("skeleton");
   const [isDraftModalOpen, setDraftModalOpen] = useState(false);
 
@@ -48,7 +50,17 @@ export default function CaseInput() {
     levels: SUCCESS_LEVEL_SCORES.reduce((acc, score) => ({ ...acc, [score]: "" }), {}),
   });
 
-  const newCanonEvent = () => ({ id: "", title: "", description: "", npc_appearance: "", timeout_turn: 0, success_criteria: [newSuccessCriterion()], on_score_branches: SUCCESS_LEVEL_SCORES.reduce((acc, score) => ({ ...acc, [score]: "" }), {}), on_success: "", on_fail: "" });
+  const newCanonEvent = () => ({
+    id: t('case_input.skeleton.default_event_id'),
+    title: t('case_input.skeleton.default_event_title'),
+    description: "",
+    npc_appearance: "",
+    timeout_turn: 0,
+    success_criteria: [newSuccessCriterion()],
+    on_score_branches: SUCCESS_LEVEL_SCORES.reduce((acc, score) => ({ ...acc, [score]: "" }), {}),
+    on_success: "",
+    on_fail: ""
+  });
 
   // Functions to get initial state structures
   const getInitialSkeletonState = () => ({
@@ -241,13 +253,18 @@ export default function CaseInput() {
   };
 
   // --- Handlers for Personas Form ---
-  const handlePersonaChange = (e, index) => {
+  const handlePersonaItemChange = (e, index) => {
     const { name, value } = e.target;
     setPersonas(prev => {
       const newPersonas = [...prev.personas];
       newPersonas[index] = { ...newPersonas[index], [name]: value };
       return { ...prev, personas: newPersonas };
     });
+  };
+
+  const handlePersonasChange = (e) => {
+    const { name, value } = e.target;
+    setPersonas(prev => ({ ...prev, [name]: value }));
   };
   const handleAddResource = () => {
     setContext((prev) => ({
@@ -417,9 +434,9 @@ export default function CaseInput() {
             }
             setPersonas(prev => ({ ...getInitialPersonasState(), ...prev, ...personasData }));
           }
-          alert(`Đã tải thành công file ${file.name}`);
+          toast.success(t('case_input.alerts.upload_success', { name: file.name }));
         } catch (error) {
-          alert("Lỗi: File JSON không hợp lệ.");
+          toast.error(t('case_input.alerts.invalid_json'));
         }
       };
       reader.readAsText(file);
@@ -429,7 +446,7 @@ export default function CaseInput() {
   const handleSaveCase = async () => {
     let caseId = skeleton.case_id || context.case_id || personas.case_id;
     if (!caseId) {
-      alert("Vui lòng nhập Case ID trước khi lưu.");
+      toast.error(t('case_input.alerts.enter_id'));
       return;
     }
 
@@ -444,7 +461,7 @@ export default function CaseInput() {
         const backgroundDocRef = doc(firestore, "backgrounds", caseId);
         await setDoc(backgroundDocRef, { case_id: caseId, background_image_url: finalBackgroundImageUrl });
       } catch (error) {
-        alert(`Lỗi khi tải ảnh nền lên Firebase: ${error.message}. Vui lòng thử lại.`);
+        toast.error(t('case_input.alerts.image_upload_error', { error: error.message }));
         return; // Stop the save process if image upload fails
       }
     }
@@ -532,17 +549,17 @@ export default function CaseInput() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || 'Lỗi từ server.');
+        throw new Error(result.message || t('case_input.alerts.server_error'));
       }
 
-      alert(result.message || `Đã lưu case '${caseId}' thành công. Trang sẽ được tải lại.`);
+      toast.success(result.message || t('case_input.alerts.save_success', { id: caseId }));
       setTimeout(() => {
         window.location.reload();
       }, 1500); // Đợi 1.5 giây trước khi tải lại trang
 
     } catch (error) {
       console.error("Error saving case:", error);
-      alert(`Lỗi khi lưu case: ${error.message}`);
+      toast.error(t('case_input.alerts.save_error', { error: error.message }));
     }
   };
 
@@ -582,12 +599,12 @@ export default function CaseInput() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    alert(`Đã lưu file ${fileName}`);
+    toast.success(t('case_input.alerts.export_success', { name: fileName }));
   };
 
   const handleClearData = (type) => {
     // This is a placeholder. You can implement logic to reset the state.
-    alert(`Chức năng xóa dữ liệu cho ${type} chưa được triển khai.`);
+    toast.info(t('case_input.alerts.clear_not_implemented', { type }));
   };
 
   const handleDraftInputChange = (e) => {
@@ -598,7 +615,7 @@ export default function CaseInput() {
   const handleSubmitDraft = async (e) => {
     e.preventDefault();
     if (!draftState.prompt.trim()) {
-      alert("Vui lòng nhập Prompt tự do để sinh case.");
+      toast.error(t('case_input.alerts.enter_prompt'));
       return;
     }
 
@@ -624,7 +641,7 @@ export default function CaseInput() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || 'Lỗi khi sinh case tự động.');
+        throw new Error(errorText || t('case_input.alerts.draft_generation_error'));
       }
 
       const draftData = await response.json();
@@ -735,19 +752,19 @@ export default function CaseInput() {
         setPersonas(newPersonas);
       }
 
-      alert(`Đã sinh case gợi ý '${draftData.case_id}' thành công.`);
+      toast.success(t('case_input.alerts.draft_success', { id: draftData.case_id }));
 
       // Show warnings if any
       if (draftData.warnings && draftData.warnings.length > 0) {
         setTimeout(() => {
-          alert("Lưu ý từ hệ thống:\n- " + draftData.warnings.join("\n- "));
+          toast.info(t('case_input.alerts.system_note') + "\n- " + draftData.warnings.join("\n- "));
         }, 100);
       }
 
       setDraftModalOpen(false); // Close modal on success
     } catch (error) {
       console.error("Error generating draft case:", error);
-      alert(`Lỗi: ${error.message}`);
+      toast.error(t('case_input.alerts.draft_error', { error: error.message }));
     } finally {
       setDraftState(prev => ({ ...prev, isLoading: false }));
     }
@@ -767,7 +784,7 @@ export default function CaseInput() {
       // Xóa URL ảnh đã lưu trên context để ưu tiên ảnh mới
       setContext(prev => ({ ...prev, background_image: '' }));
     } else {
-      alert("Vui lòng chọn một file ảnh hợp lệ (jpg, png, etc.).");
+      toast.error(t('case_input.alerts.invalid_image'));
     }
   };
 
@@ -775,7 +792,7 @@ export default function CaseInput() {
     // Ưu tiên ảnh mới chưa lưu (local URL) hoặc ảnh đã lưu trên context
     const url = backgroundState.imageUrl || context.background_image;
     if (!url) {
-      alert("Chưa có ảnh để lưu.");
+      toast.info(t('case_input.alerts.no_image'));
       return;
     }
 
@@ -795,7 +812,7 @@ export default function CaseInput() {
   const handleGenerateBackground = async () => {
     const caseId = skeleton.case_id;
     if (!caseId) {
-      alert("Vui lòng nhập Case ID trước khi sinh ảnh nền.");
+      toast.error(t('case_input.alerts.enter_id_for_image'));
       return;
     }
 
@@ -803,11 +820,11 @@ export default function CaseInput() {
 
     // Tự động tạo prompt từ context
     const contextDescriptionParts = [];
-    if (context.scene?.location) contextDescriptionParts.push(`Bối cảnh tại ${context.scene.location}.`);
-    if (context.scene?.time) contextDescriptionParts.push(`Thời gian khoảng ${context.scene.time}.`);
-    if (context.scene?.weather) contextDescriptionParts.push(`Thời tiết ${context.scene.weather}.`);
-    if (context.index_event?.summary) contextDescriptionParts.push(`Sự kiện chính: ${context.index_event.summary}.`);
-    if (context.index_event?.current_state) contextDescriptionParts.push(`Tình trạng hiện tại: ${context.index_event.current_state}.`);
+    if (context.scene?.location) contextDescriptionParts.push(t('case_input.context.prompt_location', { location: context.scene.location }));
+    if (context.scene?.time) contextDescriptionParts.push(t('case_input.context.prompt_time', { time: context.scene.time }));
+    if (context.scene?.weather) contextDescriptionParts.push(t('case_input.context.prompt_weather', { weather: context.scene.weather }));
+    if (context.index_event?.summary) contextDescriptionParts.push(t('case_input.context.prompt_main_event', { summary: context.index_event.summary }));
+    if (context.index_event?.current_state) contextDescriptionParts.push(t('case_input.context.prompt_current_state', { state: context.index_event.current_state }));
 
     const generatedPrompt = contextDescriptionParts.join(' ');
 
@@ -830,7 +847,7 @@ export default function CaseInput() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || 'Lỗi khi sinh ảnh nền.');
+        throw new Error(errorText || t('case_input.alerts.background_generation_error'));
       }
 
       const result = await response.json();
@@ -851,10 +868,11 @@ export default function CaseInput() {
         isLoading: false
       }));
       setContext(prev => ({ ...prev, background_image: '' })); // Xóa URL cũ
+      toast.success(t('case_input.alerts.background_generate_success'));
 
     } catch (error) {
       console.error("Error generating background image:", error);
-      alert(`Lỗi: ${error.message}`);
+      toast.error(t('user.error') + `: ${error.message}`);
       setBackgroundState(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -875,27 +893,36 @@ export default function CaseInput() {
             <section className="rounded-3xl border border-slate-700 bg-slate-800/30 backdrop-blur-lg p-8 shadow-2xl shadow-slate-900/50">
               <div className="flex flex-col items-center gap-3 text-center">
                 <span className="inline-flex items-center gap-2 rounded-full bg-primary-500/20 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-primary-300">
-                  Nhập liệu
+                  {t('case_input.auto_generate_button')}
                 </span>
                 <h1 className="text-3xl font-bold text-white drop-shadow-md">
-                  Trang Nhập Case
+                  {t('case_input.title')}
                 </h1>
                 <p className="max-w-2xl text-sm text-slate-300">
-                  Tải lần lượt 3 tệp Skeleton, Context và Personas để tự động điền
-                  biểu mẫu. Bạn vẫn có thể chỉnh sửa thủ công trước khi lưu case.
+                  {t('case_input.description')}
                 </p>
               </div>
               <div className="mt-6 flex flex-col items-center gap-2 text-center">
                 <button
                   type="button"
                   onClick={() => setDraftModalOpen(true)}
-                  className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-transform duration-200 hover:scale-105 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  disabled={draftState.isLoading}
+                  className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-900/20 transition-all duration-200 hover:bg-emerald-500 active:scale-95 disabled:cursor-wait disabled:opacity-50"
                 >
-                  Sinh case tự động
+                  {draftState.isLoading ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                      {t('case_input.draft_modal.generating')}
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                      {t('case_input.draft_modal.generate')}
+                    </>
+                  )}
                 </button>
                 <p className="text-xs text-slate-400">
-                  Nhập prompt tự do hoặc chủ đề chi tiết để hệ thống gợi ý case
-                  hoàn chỉnh nhanh chóng.
+                  {t('case_input.auto_generate_desc')}
                 </p>
               </div>
               <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -905,7 +932,7 @@ export default function CaseInput() {
                     className="group flex cursor-pointer flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-800/40 p-6 text-center shadow-lg shadow-slate-900/20 transition-all duration-300 focus-within:border-primary-500/70 focus-within:shadow-primary-500/10 hover:-translate-y-1 hover:border-primary-500/70 hover:bg-slate-800/80"
                     tabIndex="0"
                     role="button"
-                    aria-label={`Nhập file ${type.charAt(0).toUpperCase() + type.slice(1)} JSON`}
+                    aria-label={t('case_input.upload_json_label', { type: type.charAt(0).toUpperCase() + type.slice(1) })}
                     onClick={() => document.getElementById(`file-input-${type}`).click()}
                   >
                     <input
@@ -919,10 +946,10 @@ export default function CaseInput() {
                       {type} JSON
                     </span>
                     <p className="text-sm font-semibold text-slate-100">
-                      Chọn tệp {type}.json
+                      {t('case_input.upload_json_label', { type: type })}
                     </p>
                     <p className="max-w-[16rem] text-xs text-slate-400">
-                      Nhấn để tải lên
+                      {t('case_input.upload_hint')}
                     </p>
                     <div className="flex flex-wrap items-center justify-center gap-2">
                       <button
@@ -933,21 +960,21 @@ export default function CaseInput() {
                         }}
                         className="rounded-full bg-primary-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md shadow-primary-500/20 transition-transform duration-200 hover:scale-105 hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                       >
-                        Chọn file
+                        {t('case_input.upload_button')}
                       </button>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleExportJson(type); }}
                         className="rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-1.5 text-xs font-semibold text-primary-300 transition-transform duration-200 hover:scale-105 hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400"
                       >
-                        Luu JSON
+                        {t('case_input.save_json')}
                       </button>
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleClearData(type); }}
                         className="rounded-full border border-slate-600 px-4 py-1.5 text-xs font-semibold text-slate-400 transition-transform duration-200 hover:scale-105 hover:border-slate-500 hover:text-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-500"
                       >
-                        Xóa
+                        {t('case_input.clear')}
                       </button>
                     </div>
                   </div>
@@ -965,11 +992,11 @@ export default function CaseInput() {
                       type="button"
                       onClick={() => setActiveTab(tab)}
                       className={`rounded-full border px-5 py-2 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-200 ${activeTab === tab
-                          ? "border-transparent bg-primary-600 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-500"
-                          : "border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600 hover:bg-slate-700/70 hover:text-white"
+                        ? "border-transparent bg-primary-600 text-white shadow-lg shadow-primary-500/30 hover:bg-primary-500"
+                        : "border-slate-700 bg-slate-800/50 text-slate-300 hover:border-slate-600 hover:bg-slate-700/70 hover:text-white"
                         }`}
                     >
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      {t(`case_input.tabs.${tab}`)}
                     </button>
                   ))}
                 </div>
@@ -978,33 +1005,33 @@ export default function CaseInput() {
                   onClick={handleSaveCase}
                   className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20 transition-transform duration-200 hover:scale-105 hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-not-allowed disabled:bg-emerald-400 disabled:opacity-60"
                 >
-                  Lưu Toàn Bộ Case
+                  {t('case_input.save_all')}
                 </button>
               </div>
 
               <div className="rounded-3xl border border-slate-700 bg-slate-800/50 backdrop-blur-xl p-6 sm:p-8 shadow-2xl shadow-black/20">
                 {/* Skeleton Panel */}
                 <section hidden={activeTab !== "skeleton"} className="space-y-8">
-                  <header className="space-y-1"><h2 className="text-2xl font-bold text-white">Skeleton</h2><p className="text-sm text-slate-300">Thông tin tổng quan và danh sách Canon Event.</p></header>
+                  <header className="space-y-1"><h2 className="text-2xl font-bold text-white">{t('case_input.skeleton.title')}</h2><p className="text-sm text-slate-300">{t('case_input.skeleton.desc')}</p></header>
                   <form className="space-y-8">
                     {/* Basic Skeleton Fields */}
                     <div className="grid gap-6 md:grid-cols-2" data-basic-fields="skeleton">
                       <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">
-                        Case ID
-                        <input type="text" name="case_id" value={skeleton.case_id || ''} onChange={handleCaseIdChange} placeholder="ví dụ: case_training_001" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
+                        {t('case_input.skeleton.case_id')}
+                        <input type="text" name="case_id" value={skeleton.case_id || ''} onChange={handleCaseIdChange} placeholder={t('case_input.skeleton.case_id_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
                       </label>
                       <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">
-                        Tên case
-                        <input type="text" name="title" value={skeleton.title || ''} onChange={handleSkeletonChange} placeholder="Tên case hiển thị trong hệ thống" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
+                        {t('case_input.skeleton.case_name')}
+                        <input type="text" name="title" value={skeleton.title || ''} onChange={handleSkeletonChange} placeholder={t('case_input.skeleton.case_name_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
                       </label>
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="text-xl font-semibold text-white">
-                          Canon Events
+                          {t('case_input.skeleton.canon_events')}
                         </h3>
                         <button type="button" onClick={handleAddEvent} className="inline-flex items-center gap-2 rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-2 text-xs font-semibold text-primary-300 transition hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">
-                          + Thêm canon event
+                          {t('case_input.skeleton.add_event')}
                         </button>
                       </div>
                       {/* Canon Events List */}
@@ -1012,41 +1039,41 @@ export default function CaseInput() {
                         {skeleton.canon_events.map((event, eventIndex) => (
                           <article key={eventIndex} className="space-y-6 rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-lg">
                             <div className="flex items-center justify-between">
-                              <h4 className="text-sm font-semibold text-slate-100">Canon Event #{eventIndex + 1}</h4>
-                              <button type="button" onClick={() => handleRemoveEvent(eventIndex)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">Xóa</button>
+                              <h4 className="text-sm font-semibold text-slate-100">{t('case_input.skeleton.event_number', { number: eventIndex + 1 })}</h4>
+                              <button type="button" onClick={() => handleRemoveEvent(eventIndex)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">{t('case_input.clear')}</button>
                             </div>
                             <div className="grid gap-6 md:grid-cols-2">
-                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Mã sự kiện<input name="id" value={event.id || ''} onChange={(e) => handleEventChange(e, eventIndex)} type="text" placeholder="canon_event_01" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Tiêu đề<input name="title" value={event.title || ''} onChange={(e) => handleEventChange(e, eventIndex)} type="text" placeholder="Tên canon event" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Mô tả chi tiết<textarea name="description" value={event.description || ''} onChange={(e) => handleEventChange(e, eventIndex)} rows="3" placeholder="Diễn giải tình huống, yếu tố quan trọng..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">NPC xuất hiện<textarea name="npc_appearance" value={event.npc_appearance || ''} onChange={(e) => handleEventChange(e, eventIndex)} rows="3" placeholder="Định dạng: persona_id: vai trò (mỗi dòng hoặc cách nhau bởi dấu phẩy)" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Timeout (lượt)<input name="timeout_turn" value={event.timeout_turn || 0} onChange={(e) => handleEventChange(e, eventIndex)} type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.skeleton.event_code')}<input name="id" value={event.id || ''} onChange={(e) => handleEventChange(e, eventIndex)} type="text" placeholder={t('case_input.skeleton.event_code_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.skeleton.event_title')}<input name="title" value={event.title || ''} onChange={(e) => handleEventChange(e, eventIndex)} type="text" placeholder={t('case_input.skeleton.event_title_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">{t('case_input.skeleton.event_desc')}<textarea name="description" value={event.description || ''} onChange={(e) => handleEventChange(e, eventIndex)} rows="3" placeholder={t('case_input.skeleton.event_desc_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">{t('case_input.skeleton.npc_appearance')}<textarea name="npc_appearance" value={event.npc_appearance || ''} onChange={(e) => handleEventChange(e, eventIndex)} rows="3" placeholder={t('case_input.skeleton.npc_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.skeleton.timeout')}<input name="timeout_turn" value={event.timeout_turn || 0} onChange={(e) => handleEventChange(e, eventIndex)} type="number" min="0" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
                             </div>
 
                             {/* Success Criteria Section */}
                             <div className="mt-4 space-y-3">
                               <div className="flex flex-wrap items-center justify-between gap-3">
-                                <span className="text-sm font-semibold uppercase tracking-wide text-slate-300">Success Criteria</span>
-                                <button type="button" onClick={() => handleAddSuccessCriterion(eventIndex)} className="text-xs font-semibold text-primary-600 transition hover:text-primary-500 focus:outline-none">Thêm tiêu chí</button>
+                                <span className="text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.skeleton.success_criteria')}</span>
+                                <button type="button" onClick={() => handleAddSuccessCriterion(eventIndex)} className="text-xs font-semibold text-primary-600 transition hover:text-primary-500 focus:outline-none">{t('case_input.skeleton.add_criterion')}</button>
                               </div>
-                              <p className="text-xs text-slate-400">Mỗi tiêu chí gồm phần mô tả và 5 mức đánh giá (điểm 5 đến 1).</p>
+                              <p className="text-xs text-slate-400">{t('case_input.skeleton.criterion_desc')}</p>
                               <div className="space-y-4">
                                 {Array.isArray(event.success_criteria) && event.success_criteria.map((criterion, critIndex) => (
                                   <div key={critIndex} className="rounded-2xl border border-slate-700 bg-slate-800/50 p-4 shadow-inner space-y-4">
                                     <div className="flex flex-wrap items-center justify-between gap-3">
-                                      <span className="text-sm font-semibold text-slate-200">Tiêu chí</span>
-                                      <button type="button" onClick={() => handleRemoveSuccessCriterion(eventIndex, critIndex)} className="text-xs font-semibold text-slate-400 transition hover:text-rose-500 focus:outline-none">Xóa</button>
+                                      <span className="text-sm font-semibold text-slate-200">{t('case_input.skeleton.criterion_label')}</span>
+                                      <button type="button" onClick={() => handleRemoveSuccessCriterion(eventIndex, critIndex)} className="text-xs font-semibold text-slate-400 transition hover:text-rose-500 focus:outline-none">{t('case_input.clear')}</button>
                                     </div>
                                     <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">
-                                      Mô tả tiêu chí
-                                      <input type="text" name="description" value={criterion?.description || ''} onChange={(e) => handleSuccessCriterionChange(e, eventIndex, critIndex)} placeholder="ví dụ: CPR – Đánh giá hiệu quả..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
+                                      {t('case_input.skeleton.event_desc')}
+                                      <input type="text" name="description" value={criterion?.description || ''} onChange={(e) => handleSuccessCriterionChange(e, eventIndex, critIndex)} placeholder={t('case_input.skeleton.criterion_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
                                     </label>
                                     <div className="grid gap-3 md:grid-cols-2">
-                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 5 (Xuất sắc)<textarea rows="2" value={criterion?.levels?.[5] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 5)} placeholder="Mô tả cụ thể cho điểm 5." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 4<textarea rows="2" value={criterion?.levels?.[4] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 4)} placeholder="Mô tả cụ thể cho điểm 4." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 3<textarea rows="2" value={criterion?.levels?.[3] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 3)} placeholder="Mô tả cụ thể cho điểm 3." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">Mức 2<textarea rows="2" value={criterion?.levels?.[2] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 2)} placeholder="Mô tả cụ thể cho điểm 2." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Mức 1 (Thấp nhất)<textarea rows="2" value={criterion?.levels?.[1] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 1)} placeholder="Mô tả cụ thể cho điểm 1." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.skeleton.levels.level5')}<textarea rows="2" value={criterion?.levels?.[5] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 5)} placeholder={t('case_input.skeleton.levels.level5_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.skeleton.levels.level4')}<textarea rows="2" value={criterion?.levels?.[4] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 4)} placeholder={t('case_input.skeleton.levels.level4_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.skeleton.levels.level3')}<textarea rows="2" value={criterion?.levels?.[3] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 3)} placeholder={t('case_input.skeleton.levels.level3_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.skeleton.levels.level2')}<textarea rows="2" value={criterion?.levels?.[2] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 2)} placeholder={t('case_input.skeleton.levels.level2_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                                      <label className="text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">{t('case_input.skeleton.levels.level1')}<textarea rows="2" value={criterion?.levels?.[1] || ''} onChange={(e) => handleLevelDescriptorChange(e, eventIndex, critIndex, 1)} placeholder={t('case_input.skeleton.levels.level1_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
                                     </div>
                                   </div>
                                 ))}
@@ -1057,16 +1084,16 @@ export default function CaseInput() {
                             <div className="mt-4 space-y-3">
                               <div className="flex flex-wrap items-start justify-between gap-3">
                                 <div>
-                                  <span className="text-sm font-semibold uppercase tracking-wide text-primary-400">Rẽ nhánh theo thang điểm 5</span>
-                                  <p className="text-xs text-slate-400">Chỉ cần nhập 5 nhánh tương ứng điểm 5 → 1 (điểm cao là tốt nhất, điểm thấp là thất bại).</p>
+                                  <span className="text-sm font-semibold uppercase tracking-wide text-primary-400">{t('case_input.skeleton.branching')}</span>
+                                  <p className="text-xs text-slate-400">{t('case_input.skeleton.branching_desc')}</p>
                                 </div>
-                                <button type="button" onClick={() => handleResetBranches(eventIndex)} className="text-xs font-semibold text-primary-600 transition hover:text-primary-500 focus:outline-none">Xóa nhánh</button>
+                                <button type="button" onClick={() => handleResetBranches(eventIndex)} className="text-xs font-semibold text-primary-600 transition hover:text-primary-500 focus:outline-none">{t('case_input.skeleton.reset_branches')}</button>
                               </div>
                               <div className="space-y-2">
                                 {SUCCESS_LEVEL_SCORES.map((score) => (
                                   <label key={score} className="block space-y-1 rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">Điểm {score}</span>
-                                    <input type="text" value={event.on_score_branches?.[score] || ''} onChange={(e) => handleBranchChange(e, eventIndex, score)} placeholder={`Nhánh kế tiếp khi đạt điểm ${score}.`} className="w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
+                                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">{t('case_input.skeleton.score_label', { score: score })}</span>
+                                    <input type="text" value={event.on_score_branches?.[score] || ''} onChange={(e) => handleBranchChange(e, eventIndex, score)} placeholder={t('case_input.skeleton.score_placeholder', { score: score })} className="w-full rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" />
                                   </label>
                                 ))}
                               </div>
@@ -1081,7 +1108,7 @@ export default function CaseInput() {
                         onClick={() => setActiveTab("context")}
                         className="inline-flex items-center gap-2 rounded-full bg-primary-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                       >
-                        Sang Context →
+                        {t('case_input.skeleton.next_tab')}
                       </button>
                     </div>
                   </form>
@@ -1091,44 +1118,44 @@ export default function CaseInput() {
                 <section hidden={activeTab !== "context"} className="space-y-8">
                   <header className="space-y-1">
                     <h2 className="text-2xl font-bold text-white">
-                      Context
+                      {t('case_input.context.title')}
                     </h2>
                     <p className="text-sm text-slate-300">
-                      Bối cảnh, resource và điều kiện hiện trường.
+                      {t('case_input.context.desc')}
                     </p>
                   </header>
                   <form className="space-y-8">
                     {/* Basic Context Fields */}
                     <div className="grid gap-6 md:grid-cols-2">
-                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Case ID<input name="case_id" type="text" value={context.case_id || ''} onChange={handleCaseIdChange} placeholder="Sẽ tự động đồng bộ" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Chủ đề case<input name="topic" type="text" value={context.topic || ''} onChange={handleContextChange} placeholder="Ví dụ: Tai nạn giao thông giờ cao điểm" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.skeleton.case_id')}<input name="case_id" type="text" value={context.case_id || ''} onChange={handleCaseIdChange} placeholder={t('case_input.context.case_id_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">{t('case_input.context.topic')}<input name="topic" type="text" value={context.topic || ''} onChange={handleContextChange} placeholder={t('case_input.context.topic_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
                     </div>
                     {/* Scene Section */}
                     <div className="rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-inner">
-                      <h3 className="text-lg font-semibold text-white">Bối cảnh (Scene)</h3>
+                      <h3 className="text-lg font-semibold text-white">{t('case_input.context.scene_title')}</h3>
                       <div className="mt-4 grid gap-6 md:grid-cols-2">
-                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Thời gian<input name="time" type="text" value={context.scene?.time || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Thời điểm diễn ra" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">Thời tiết<input name="weather" type="text" value={context.scene?.weather || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Nắng, mưa..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Vị trí<input name="location" type="text" value={context.scene?.location || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Địa điểm cụ thể" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Mức độ ồn & ghi chú khác<textarea name="noise" rows="3" value={context.scene?.noise || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder="Ghi chú thêm về môi trường" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.context.time')}<input name="time" type="text" value={context.scene?.time || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder={t('case_input.context.time_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.context.weather')}<input name="weather" type="text" value={context.scene?.weather || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder={t('case_input.context.weather_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">{t('case_input.context.location')}<input name="location" type="text" value={context.scene?.location || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder={t('case_input.context.location_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">{t('case_input.context.noise')}<textarea name="noise" rows="3" value={context.scene?.noise || ''} onChange={(e) => handleNestedContextChange(e, 'scene')} placeholder={t('case_input.context.noise_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
                       </div>
                     </div>
                     {/* Index Event Section */}
                     <div className="rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-inner">
-                      <h3 className="text-lg font-semibold text-white">Sự kiện ban đầu</h3>
+                      <h3 className="text-lg font-semibold text-white">{t('case_input.context.initial_event')}</h3>
                       <div className="mt-4 grid gap-6 md:grid-cols-2">
-                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Tóm tắt sự kiện<textarea name="summary" rows="3" value={context.index_event?.summary || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder="Mô tả ngắn gọn diễn biến" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Tình trạng hiện tại<textarea name="current_state" rows="3" value={context.index_event?.current_state || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder="Điều gì đang diễn ra?" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">Ai tiếp cận đầu tiên<input name="who_first" type="text" value={context.index_event?.who_first || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder="Nhóm/cá nhân đầu tiên xử lý hiện trường" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">{t('case_input.context.summary')}<textarea name="summary" rows="3" value={context.index_event?.summary || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder={t('case_input.context.summary_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">{t('case_input.context.current_state')}<textarea name="current_state" rows="3" value={context.index_event?.current_state || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder={t('case_input.context.current_state_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                        <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300 md:col-span-2">{t('case_input.context.who_first')}<input name="who_first" type="text" value={context.index_event?.who_first || ''} onChange={(e) => handleNestedContextChange(e, 'index_event')} placeholder={t('case_input.context.who_first_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
                       </div>
                     </div>
                     {/* Background Image Generator */}
                     <div className="rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-inner space-y-5">
                       {/* Header and other elements from nhap-case.html can be added here */}
-                      <h3 className="text-lg font-semibold text-white">Ảnh nền minh họa</h3>
+                      <h3 className="text-lg font-semibold text-white">{t('case_input.context.background_image')}</h3>
                       <div className="flex flex-wrap items-end justify-between gap-4">
                         <p className="text-sm text-slate-400 max-w-xl">
-                          Bạn có thể sinh ảnh tự động từ bối cảnh đã nhập, hoặc thêm prompt tùy chọn để mô tả chi tiết hơn.
+                          {t('case_input.context.image_desc')}
                         </p>
                         <button
                           type="button"
@@ -1136,13 +1163,13 @@ export default function CaseInput() {
                           disabled={backgroundState.isLoading}
                           className="inline-flex items-center gap-2 rounded-full bg-sky-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 transition-transform duration-200 hover:scale-105 hover:bg-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:cursor-wait disabled:bg-sky-400"
                         >
-                          {backgroundState.isLoading ? 'Đang xử lý...' : 'Sinh ảnh'}
+                          {backgroundState.isLoading ? t('case_input.context.processing') : t('case_input.context.generate_image')}
                         </button>
                       </div>
                       <div className="grid gap-6 md:grid-cols-2">
-                        <label className="text-sm font-semibold text-slate-200">Prompt tùy chọn<textarea name="prompt" value={backgroundState.prompt} onChange={handleBackgroundInputChange} rows="4" placeholder="Mô tả bối cảnh..." className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                        <label className="text-sm font-semibold text-slate-200">{t('case_input.context.optional_prompt')}<textarea name="prompt" value={backgroundState.prompt} onChange={handleBackgroundInputChange} rows="4" placeholder={t('case_input.context.optional_prompt_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
                         <div className="space-y-2">
-                          <span className="text-sm font-semibold text-slate-200">Tải ảnh lên</span>
+                          <span className="text-sm font-semibold text-slate-200">{t('case_input.context.upload_image')}</span>
                           <div
                             className={`flex items-center justify-center w-full h-32 border-2 border-slate-600 border-dashed rounded-lg cursor-pointer bg-slate-800/50 hover:bg-slate-700/60 ${backgroundState.isLoading ? 'animate-pulse' : ''}`}
                             onClick={() => document.getElementById('background-image-upload').click()}
@@ -1156,7 +1183,7 @@ export default function CaseInput() {
                           >
                             <div className="flex flex-col items-center justify-center text-center">
                               <svg className="w-8 h-8 mb-2 text-slate-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" /></svg>
-                              <p className="text-xs text-slate-400"><span className="font-semibold">Nhấn để tải lên</span> hoặc kéo thả</p>
+                              <p className="text-xs text-slate-400"><span className="font-semibold">{t('case_input.context.upload_hint')}</span></p>
                               <p className="text-xs text-slate-500">PNG, JPG, WEBP</p>
                             </div>
                             <input id="background-image-upload" type="file" className="hidden" accept="image/*" onChange={(e) => handleBackgroundImageUpload(e.target.files[0])} />
@@ -1165,15 +1192,15 @@ export default function CaseInput() {
                       </div>
                       {(backgroundState.imageUrl || context.background_image) && ( // Ưu tiên hiển thị ảnh mới (local) hoặc ảnh đã lưu
                         <div className="mt-4">
-                          <h4 className="text-sm font-semibold text-slate-200 mb-2">Xem trước ảnh nền</h4>
+                          <h4 className="text-sm font-semibold text-slate-200 mb-2">{t('case_input.context.preview_image')}</h4>
                           <div className="relative">
-                            <img src={backgroundState.imageUrl || context.background_image} alt="Xem trước ảnh nền" className="w-full max-h-60 rounded-lg object-cover border border-slate-200" />
+                            <img src={backgroundState.imageUrl || context.background_image} alt={t('case_input.context.preview_image_alt')} className="w-full max-h-60 rounded-lg object-cover border border-slate-200" />
                             <button
                               type="button"
                               onClick={handleDownloadImage}
                               className="absolute top-2 right-2 bg-white/80 text-slate-800 text-xs font-semibold px-3 py-1 rounded-full shadow hover:bg-white"
                             >
-                              Lưu ảnh
+                              {t('case_input.context.save_image')}
                             </button>
                           </div>
                         </div>
@@ -1181,29 +1208,29 @@ export default function CaseInput() {
                     </div>
                     {/* Notes Section */}
                     <div className="grid gap-6 md:grid-cols-2 text-slate-300">
-                      <label className="block text-sm font-semibold uppercase tracking-wide">Ràng buộc hiện trường<textarea name="constraints" rows="3" value={context.constraints || ''} onChange={handleContextChange} placeholder="Mỗi dòng là một ràng buộc" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                      <label className="block text-sm font-semibold uppercase tracking-wide">Chính sách & an toàn<textarea name="policies" rows="3" value={context.policies || ''} onChange={handleContextChange} placeholder="Mỗi dòng là một chính sách cần tuân thủ" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                      <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Đơn vị bàn giao<input name="handover" type="text" value={context.handover || ''} onChange={handleContextChange} placeholder="Ví dụ: Bàn giao cho đội cứu trợ địa phương" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                      <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Trạng thái thành công cuối cùng<textarea name="success_state" rows="3" value={context.success_state || ''} onChange={handleContextChange} placeholder="Tình trạng lý tưởng sau khi hoàn thành" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.context.constraints')}<textarea name="constraints" rows="3" value={context.constraints || ''} onChange={handleContextChange} placeholder={t('case_input.context.constraints_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.context.policies')}<textarea name="policies" rows="3" value={context.policies || ''} onChange={handleContextChange} placeholder={t('case_input.context.policies_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">{t('case_input.context.handover')}<input name="handover" type="text" value={context.handover || ''} onChange={handleContextChange} placeholder={t('case_input.context.handover_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">{t('case_input.context.success_state')}<textarea name="success_state" rows="3" value={context.success_state || ''} onChange={handleContextChange} placeholder={t('case_input.context.success_state_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
                     </div>
 
                     {/* Resources Section */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-xl font-semibold text-white">Nguồn lực khả dụng</h3>
-                        <button type="button" onClick={handleAddResource} className="inline-flex items-center gap-2 rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-2 text-xs font-semibold text-primary-300 transition hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">+ Thêm nhóm resource</button>
+                        <h3 className="text-xl font-semibold text-white">{t('case_input.context.resources_title')}</h3>
+                        <button type="button" onClick={handleAddResource} className="inline-flex items-center gap-2 rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-2 text-xs font-semibold text-primary-300 transition hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">{t('case_input.context.add_resource')}</button>
                       </div>
                       <div className="space-y-6">
                         {context.resources.map((resource, index) => (
                           <article key={index} className="space-y-6 rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-lg">
                             <div className="flex items-center justify-between">
-                              <h4 className="text-sm font-semibold text-slate-100">Nhóm Resource #{index + 1}</h4>
-                              <button type="button" onClick={() => handleRemoveResource(index)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">Xóa</button>
+                              <h4 className="text-sm font-semibold text-slate-100">{t('case_input.context.resource_group', { number: index + 1 })}</h4>
+                              <button type="button" onClick={() => handleRemoveResource(index)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">{t('case_input.clear')}</button>
                             </div>
                             <div className="grid gap-6 md:grid-cols-2 text-slate-300">
-                              <label className="block text-sm font-semibold uppercase tracking-wide">Tên nhóm<input name="label" type="text" value={resource.label || ''} onChange={(e) => handleResourceChange(e, index)} placeholder="Ví dụ: Nhân lực y tế tiền viện" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide">Ghi chú (tùy chọn)<input name="note" type="text" value={resource.note || ''} onChange={(e) => handleResourceChange(e, index)} placeholder="Ghi chú bổ sung cho nhóm này" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Danh sách nguồn lực<textarea name="items" rows="3" value={resource.items || ''} onChange={(e) => handleResourceChange(e, index)} placeholder="Mỗi dòng là một tài nguyên" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.context.resource_name')}<input name="label" type="text" value={resource.label || ''} onChange={(e) => handleResourceChange(e, index)} placeholder={t('case_input.context.resource_name_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.context.resource_note')}<input name="note" type="text" value={resource.note || ''} onChange={(e) => handleResourceChange(e, index)} placeholder={t('case_input.context.resource_note_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">{t('case_input.context.resource_items')}<textarea name="items" rows="3" value={resource.items || ''} onChange={(e) => handleResourceChange(e, index)} placeholder={t('case_input.context.resource_items_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
                             </div>
                           </article>
                         ))}
@@ -1215,14 +1242,14 @@ export default function CaseInput() {
                         onClick={() => setActiveTab("skeleton")}
                         className="inline-flex items-center gap-2 rounded-full border border-slate-600 px-5 py-2 text-sm font-semibold text-slate-300 transition hover:bg-slate-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-slate-500"
                       >
-                        ← Về Skeleton
+                        ← {t('case_input.context.back_to_skeleton')}
                       </button>
                       <button
                         type="button"
                         onClick={() => setActiveTab("personas")}
                         className="inline-flex items-center gap-2 rounded-full bg-primary-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                       >
-                        Sang Personas →
+                        {t('case_input.context.next_to_personas')}
                       </button>
                     </div>
                   </form>
@@ -1231,11 +1258,11 @@ export default function CaseInput() {
                 {/* Flow Panel */}
                 <section hidden={activeTab !== "flow"} className="space-y-8">
                   <header className="space-y-1">
-                    <h2 className="text-2xl font-bold text-white">Sơ đồ luồng sự kiện (Event Flow Diagram)</h2>
-                    <p className="text-sm text-slate-300">Trực quan hóa các nhánh rẽ giữa các Canon Event. Bạn có thể kéo thả các khối để sắp xếp lại.</p>
+                    <h2 className="text-2xl font-bold text-white">{t('case_input.flow.title')}</h2>
+                    <p className="text-sm text-slate-300">{t('case_input.flow.desc')}</p>
                   </header>
-                  <div style={{ height: '600px' }} className="rounded-2xl border border-slate-700 bg-slate-900/50 shadow-inner">
-                    <FlowDiagram skeleton={skeleton} />
+                  <div style={{ height: '600px' }} className="rounded-2xl border border-slate-700 bg-slate-900/50 shadow-inner overflow-hidden">
+                    {activeTab === "flow" && <FlowDiagram skeleton={skeleton} />}
                   </div>
                 </section>
 
@@ -1243,46 +1270,48 @@ export default function CaseInput() {
                 <section hidden={activeTab !== "personas"} className="space-y-8">
                   <header className="space-y-1">
                     <h2 className="text-2xl font-bold text-white">
-                      Personas
+                      {t('case_input.personas.title')}
                     </h2>
                     <p className="text-sm text-slate-300">
-                      Danh sách nhân vật và đặc điểm hành vi.
+                      {t('case_input.personas.desc')}
                     </p>
                   </header>
                   <form className="space-y-8">
                     {/* Basic Personas Fields */}
                     <div className="grid gap-6 md:grid-cols-2 text-slate-300">
-                      <label className="block text-sm font-semibold uppercase tracking-wide">Case ID<input name="case_id" type="text" value={personas.case_id || ''} onChange={handleCaseIdChange} placeholder="Sẽ tự động đồng bộ" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                      <label className="block text-sm font-semibold uppercase tracking-wide">Số lượng persona (tham khảo)<input name="count" type="number" min="0" value={personas.count || 0} onChange={(e) => setPersonas(p => ({ ...p, count: e.target.value }))} placeholder="Ví dụ: 3" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.skeleton.case_id')}<input name="case_id" type="text" value={personas.case_id || ''} onChange={handleCaseIdChange} placeholder={t('case_input.context.case_id_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                      <label className="block text-sm font-semibold uppercase tracking-wide text-slate-300">{t('case_input.personas.persona_count')}<input name="count" type="number" min="0" value={personas.count || 0} onChange={handlePersonasChange} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-xl font-semibold text-white">Danh sách Persona</h3>
+                        <h3 className="text-xl font-semibold text-white">{t('case_input.personas.list_title')}</h3>
                         <button type="button" onClick={handleAddPersona} className="inline-flex items-center gap-2 rounded-full border border-primary-500/50 bg-primary-500/10 px-4 py-2 text-xs font-semibold text-primary-300 transition hover:bg-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-400">
-                          + Thêm persona
+                          {t('case_input.personas.add_persona')}
                         </button>
                       </div>
                       <div className="space-y-6">
                         {personas.personas.map((persona, index) => (
                           <article key={index} className="space-y-6 rounded-2xl border border-slate-700 bg-slate-900/30 p-6 shadow-lg">
                             <div className="flex items-center justify-between">
-                              <h4 className="text-sm font-semibold text-slate-100">Persona #{index + 1}</h4>
-                              <button type="button" onClick={() => handleRemovePersona(index)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">Xóa</button>
+                              <h4 className="text-sm font-semibold text-slate-100">{t('case_input.personas.persona_number', { number: index + 1 })}</h4>
+                              <button type="button" onClick={() => handleRemovePersona(index)} className="text-xs font-semibold text-rose-600 transition hover:text-rose-500">{t('case_input.clear')}</button>
                             </div>
                             <div className="grid gap-6 md:grid-cols-2 text-slate-300">
-                              <label className="block text-sm font-semibold uppercase tracking-wide">Persona ID<input name="id" type="text" value={persona.id || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="persona_01" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide">Tên nhân vật<input name="name" type="text" value={persona.name || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Tên hiển thị" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide">Vai trò<input name="role" type="text" value={persona.role || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Vai trò trong case" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide">Tuổi<input name="age" type="number" value={persona.age || ''} onChange={(e) => handlePersonaChange(e, index)} min="0" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide">Giới tính<input name="gender" type="text" value={persona.gender || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Nam / Nữ / Khác" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Lý lịch / hoàn cảnh<textarea name="background" rows="3" value={persona.background || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Thông tin nền của nhân vật" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Tính cách<textarea name="personality" rows="3" value={persona.personality || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Đặc điểm tính cách nổi bật" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Mục tiêu<textarea name="goal" rows="3" value={persona.goal || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Điều nhân vật muốn đạt được" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide">Speech pattern<input name="speech_pattern" type="text" value={persona.speech_pattern || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Phong cách giao tiếp" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide">Emotion ban đầu<input name="emotion_init" type="text" value={persona.emotion_init || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Cảm xúc khi bắt đầu tình huống" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Emotion trong quá trình<textarea name="emotion_during" rows="3" value={persona.emotion_during || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Mỗi dòng là một mốc cảm xúc" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide">Emotion kết thúc<input name="emotion_end" type="text" value={persona.emotion_end || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Cảm xúc khi kết thúc tình huống" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
-                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">Voice tags<input name="voice_tags" type="text" value={persona.voice_tags || ''} onChange={(e) => handlePersonaChange(e, index)} placeholder="Cách nhau bởi dấu phẩy" className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.personas.persona_id')}<input name="persona_id" type="text" value={persona.persona_id || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.persona_id_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.personas.name')}<input name="name" type="text" value={persona.name || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.name_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.personas.role')}<input name="role" type="text" value={persona.role || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.role_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <div className="grid grid-cols-2 gap-4">
+                                <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.personas.age')}<input name="age" type="text" value={persona.age || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.age_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                                <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.personas.gender')}<input name="gender" type="text" value={persona.gender || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.gender_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              </div>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">{t('case_input.personas.background')}<textarea name="background" rows="3" value={persona.background || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.background_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">{t('case_input.personas.personality')}<textarea name="personality" rows="3" value={persona.personality || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.personality_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">{t('case_input.personas.goal')}<textarea name="goal" rows="3" value={persona.goal || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.goal_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide md:col-span-2">{t('case_input.personas.speech_pattern')}<textarea name="speech_pattern" rows="2" value={persona.speech_pattern || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.speech_pattern_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50"></textarea></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.personas.emotion_init')}<input name="emotion_init" type="text" value={persona.emotion_init || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.emotion_init_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.personas.emotion_during')}<input name="emotion_during" type="text" value={persona.emotion_during || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.emotion_during_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.personas.emotion_end')}<input name="emotion_end" type="text" value={persona.emotion_end || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.emotion_end_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
+                              <label className="block text-sm font-semibold uppercase tracking-wide">{t('case_input.personas.voice_tags')}<input name="voice_tags" type="text" value={persona.voice_tags || ''} onChange={(e) => handlePersonaItemChange(e, index)} placeholder={t('case_input.personas.voice_tags_placeholder')} className="mt-2 w-full rounded-xl border border-slate-600 bg-slate-700/50 px-3 py-2 text-sm text-slate-200 placeholder:text-slate-400 focus:border-primary-500 focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50" /></label>
                             </div>
                           </article>
                         ))}
@@ -1297,107 +1326,178 @@ export default function CaseInput() {
         </main>
       </div>
 
-      {/* Draft Modal */}
+      {/* Draft Modal - Professional Redesign */}
       {isDraftModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-6 py-8" role="dialog" aria-modal="true">
-          <div className="relative max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+          {/* Backdrop with enhanced blur */}
+          <div
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity duration-300"
+            onClick={() => setDraftModalOpen(false)}
+          />
+
+          <div className="relative w-full max-w-2xl transform overflow-hidden rounded-[2.5rem] border border-emerald-500/20 bg-slate-900 shadow-2xl shadow-emerald-500/10 transition-all duration-300">
+            {/* Header with Decorative Light Effect */}
+            <div className="absolute -top-24 -left-24 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl opacity-50" />
+            <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-sky-500/10 blur-3xl opacity-50" />
+
+            {/* Close Button */}
             <button
               type="button"
               onClick={() => setDraftModalOpen(false)}
-              className="absolute right-4 top-4 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-200"
+              className="absolute right-6 top-6 z-10 rounded-full bg-slate-800/50 p-2 text-slate-400 backdrop-blur-sm transition-all hover:bg-slate-700 hover:text-white group"
               aria-label="Đóng"
             >
-              &#10005;
+              <svg className="h-5 w-5 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
-            <form
-              onSubmit={handleSubmitDraft}
-              className="space-y-5"
-            >
-              <header className="space-y-2">
-                <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-                  Agent gợi ý case
-                </span>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Sinh case tự động
-                </h2>
-                <p className="text-sm text-slate-600">
-                  Mô tả chủ đề, nhân vật mong muốn hoặc các chi tiết khác để hệ
-                  thống sinh ra skeleton, context và personas tương ứng.
-                </p>
-              </header>
-              <div className="space-y-3">
-                <label className="flex flex-col gap-2 text-left">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Prompt tự do
+
+            <form onSubmit={handleSubmitDraft} className="relative z-10 flex flex-col p-8 sm:p-10">
+              {/* Header Content */}
+              <div className="mb-10 flex flex-col items-center gap-3 text-center">
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
                   </span>
+                  {t('case_input.draft_modal.agent_hint')}
+                </span>
+                <h2 className="bg-gradient-to-r from-emerald-400 to-sky-400 bg-clip-text text-3xl font-black tracking-tight text-transparent sm:text-4xl">
+                  {t('case_input.draft_modal.title')}
+                </h2>
+                <p className="max-w-md text-sm font-medium leading-relaxed text-slate-400">
+                  {t('case_input.draft_modal.desc')}
+                </p>
+              </div>
+
+              {/* Form Body */}
+              <div className="space-y-6">
+                {/* Main Prompt Area */}
+                <div className="group relative space-y-2">
+                  <label htmlFor="prompt" className="flex items-center gap-2 ml-1 text-[11px] font-bold uppercase tracking-widest text-slate-500 transition-colors group-focus-within:text-emerald-400">
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    {t('case_input.draft_modal.free_prompt')} <span className="text-emerald-500">*</span>
+                  </label>
                   <textarea
+                    id="prompt"
                     name="prompt"
+                    required
                     value={draftState.prompt}
                     onChange={handleDraftInputChange}
-                    rows="4"
-                    placeholder="Ví dụ: Tạo case về khám răng định kỳ với 3 nhân vật: bác sĩ hướng dẫn, điều dưỡng hỗ trợ và bệnh nhân cao tuổi."
-                    className="w-full rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                  ></textarea>
-                </label>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <label className="flex flex-col gap-2 text-left">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Chủ đề (tùy chọn)
-                    </span>
+                    placeholder={t('case_input.draft_modal.free_prompt_placeholder')}
+                    className="block w-full min-h-[120px] rounded-3xl border-0 bg-slate-800/50 px-5 py-4 text-sm text-slate-100 shadow-inner ring-1 ring-inset ring-slate-700/50 transition-all duration-300 placeholder:text-slate-600 focus:bg-slate-800/80 focus:ring-2 focus:ring-inset focus:ring-emerald-500/50 focus:outline-none"
+                  />
+                </div>
+
+                {/* Optional Grid */}
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div className="group space-y-2">
+                    <label className="flex items-center gap-2 ml-1 text-[11px] font-bold uppercase tracking-widest text-slate-500 transition-colors group-focus-within:text-emerald-400">
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+                      {t('case_input.draft_modal.topic_opt')}
+                    </label>
                     <input
                       name="topic"
                       type="text"
                       value={draftState.topic}
                       onChange={handleDraftInputChange}
-                      placeholder="VD: Khám răng định kỳ tại phòng khám ABC"
-                      className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                      placeholder={t('case_input.draft_modal.topic_placeholder')}
+                      className="block w-full rounded-2xl border-0 bg-slate-800/50 px-4 py-3 text-sm text-slate-200 shadow-inner ring-1 ring-inset ring-slate-700/50 transition-all duration-300 placeholder:text-slate-600 focus:bg-slate-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500/40 focus:outline-none"
                     />
-                  </label>
-                  <label className="flex flex-col gap-2 text-left">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Số nhân vật dự kiến
-                    </span>
+                  </div>
+                  <div className="group space-y-2">
+                    <label className="flex items-center gap-2 ml-1 text-[11px] font-bold uppercase tracking-widest text-slate-500 transition-colors group-focus-within:text-emerald-400">
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                      {t('case_input.draft_modal.persona_count')}
+                    </label>
                     <input
                       name="personaCount"
                       type="number"
                       min="1"
                       value={draftState.personaCount}
                       onChange={handleDraftInputChange}
-                      placeholder="Mặc định 3"
-                      className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                      placeholder={t('case_input.draft_modal.persona_count_placeholder')}
+                      className="block w-full rounded-2xl border-0 bg-slate-800/50 px-4 py-3 text-sm text-slate-200 shadow-inner ring-1 ring-inset ring-slate-700/50 transition-all duration-300 placeholder:text-slate-600 focus:bg-slate-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500/40 focus:outline-none"
                     />
-                  </label>
-                  <label className="flex flex-col gap-2 text-left">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Địa điểm chính (tùy chọn)
-                    </span>
+                  </div>
+                  <div className="group space-y-2">
+                    <label className="flex items-center gap-2 ml-1 text-[11px] font-bold uppercase tracking-widest text-slate-500 transition-colors group-focus-within:text-emerald-400">
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                      {t('case_input.draft_modal.location_opt')}
+                    </label>
                     <input
                       name="location"
                       type="text"
                       value={draftState.location}
                       onChange={handleDraftInputChange}
-                      placeholder="VD: Phòng khám nha khoa Quận 3"
-                      className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-700 placeholder:text-slate-400 focus:border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                      placeholder={t('case_input.draft_modal.location_placeholder')}
+                      className="block w-full rounded-2xl border-0 bg-slate-800/50 px-4 py-3 text-sm text-slate-200 shadow-inner ring-1 ring-inset ring-slate-700/50 transition-all duration-300 placeholder:text-slate-600 focus:bg-slate-800 focus:ring-2 focus:ring-inset focus:ring-emerald-500/40 focus:outline-none"
                     />
-                  </label>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 ml-1 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" /></svg>
+                      {t('case_input.draft_modal.output_language')}
+                    </label>
+                    <div className="flex h-[44px] items-stretch gap-1 rounded-[1.25rem] bg-slate-800/50 p-1 ring-1 ring-inset ring-slate-700/50">
+                      {[
+                        { id: 'vi', label: t('case_input.draft_modal.lang_vi') },
+                        { id: 'en', label: t('case_input.draft_modal.lang_en') }
+                      ].map((lang) => (
+                        <label
+                          key={lang.id}
+                          className={`relative flex flex-1 cursor-pointer items-center justify-center rounded-xl text-xs font-bold transition-all duration-200 ${draftState.language === lang.id
+                            ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-900/40'
+                            : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
+                            }`}
+                        >
+                          <input
+                            type="radio"
+                            name="language"
+                            value={lang.id}
+                            checked={draftState.language === lang.id}
+                            onChange={handleDraftInputChange}
+                            className="sr-only"
+                          />
+                          {lang.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <footer className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-slate-500"></p>
-                <div className="flex gap-3">
+
+              {/* Footer with Glowing Generate Button */}
+              <footer className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-slate-700/50 pt-8">
+                <p className="text-[10px] font-medium text-slate-500 italic max-w-[200px]">
+                  * Dữ liệu sinh ra sẽ được tự động điền vào biểu mẫu để bạn kiểm tra.
+                </p>
+                <div className="flex items-center gap-4">
                   <button
                     type="button"
                     onClick={() => setDraftModalOpen(false)}
-                    className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                    className="rounded-2xl px-6 py-3 text-sm font-bold text-slate-400 transition-colors duration-200 hover:text-slate-100 focus:outline-none"
                   >
-                    Hủy
+                    {t('case_input.draft_modal.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={draftState.isLoading}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200 disabled:cursor-wait disabled:bg-emerald-400"
+                    className="group relative inline-flex items-center gap-2 overflow-hidden rounded-[1.5rem] bg-emerald-600 px-8 py-3.5 text-sm font-bold text-white transition-all duration-300 hover:bg-emerald-500 hover:shadow-[0_0_30px_rgba(16,185,129,0.3)] focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:cursor-wait disabled:opacity-50"
                   >
-                    {draftState.isLoading ? "Đang sinh..." : "Sinh case"}
+                    {draftState.isLoading ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                        <span>{t('case_input.draft_modal.generating')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4 transition-transform group-hover:scale-125" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        <span>{t('case_input.draft_modal.generate')}</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </footer>
@@ -1535,7 +1635,6 @@ const FlowDiagram = ({ skeleton }) => {
         label: (
           <div className="p-4 text-center">
             <div className="font-bold text-lg text-white">{finishNodeId}</div>
-            <div className="text-base font-bold text-slate-200">Kết thúc</div>
           </div>
         )
       },

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { backgroundImage2 } from '../../Image/image';
 
 // Lấy component ChatMessage từ CaseRunner.jsx hoặc tạo một file riêng
 // Ở đây, chúng ta định nghĩa lại để tiện sử dụng
 const ChatMessage = ({ message }) => {
+  const { t } = useTranslation();
   const isUser = message.sender === "user";
   const getSenderColor = (sender) => {
     if (sender === 'user') return 'bg-primary-600 text-white';
@@ -16,7 +18,7 @@ const ChatMessage = ({ message }) => {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div className={`max-w-lg rounded-2xl px-4 py-2.5 ${getSenderColor(message.sender)}`}>
-        <p className="text-sm font-semibold">{message.speakerName || (isUser ? "Bạn" : "Hệ thống")}</p>
+        <p className="text-sm font-semibold">{message.speakerName || (isUser ? t('history_detail.you') : t('history_detail.system'))}</p>
         <p className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{message.text}</p>
       </div>
     </div>
@@ -28,6 +30,7 @@ export default function HistoryDetail() {
   const [history, setHistory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function fetchHistoryDetail() {
@@ -40,7 +43,7 @@ export default function HistoryDetail() {
         });
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.message || 'Lỗi khi tải chi tiết lịch sử');
+          throw new Error(data.message || t('history_detail.error_loading', { error: '' }));
         }
         const data = await res.json();
         setHistory(data);
@@ -51,18 +54,18 @@ export default function HistoryDetail() {
       }
     }
     fetchHistoryDetail();
-  }, [sessionId]);
+  }, [sessionId, t]);
 
   if (loading) {
-    return <div className="text-center text-white text-lg p-10">Đang tải lịch sử...</div>;
+    return <div className="text-center text-white text-lg p-10">{t('history_detail.loading')}</div>;
   }
 
   if (error) {
-    return <div className="text-center text-red-400 text-lg p-10">Lỗi: {error}</div>;
+    return <div className="text-center text-red-400 text-lg p-10">{t('user.error')}: {error}</div>;
   }
 
   if (!history) {
-    return <div className="text-center text-white text-lg p-10">Không tìm thấy dữ liệu.</div>;
+    return <div className="text-center text-white text-lg p-10">{t('history_detail.no_data')}</div>;
   }
 
   // Lấy chi tiết điểm từ eventScores đã được lưu
@@ -84,16 +87,16 @@ export default function HistoryDetail() {
         {/* Header */}
         <header className="mb-8">
           <Link to="/user" className="text-primary-400 hover:text-primary-300 mb-4 inline-block">
-            &larr; Quay lại Dashboard
+            &larr; {t('history_detail.back_to_dashboard')}
           </Link>
-          <h1 className="text-3xl font-bold text-white">Chi tiết Case: {history.caseId}</h1>
-          <p className="text-slate-400">Session ID: {history.sessionId}</p>
+          <h1 className="text-3xl font-bold text-white">{t('history_detail.case_detail', { id: history.caseId })}</h1>
+          <p className="text-slate-400">{t('history_detail.session_id', { id: history.sessionId })}</p>
         </header>
 
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Left: Chat History */}
           <div className="lg:col-span-2 bg-slate-800/50 border border-slate-700 rounded-2xl flex flex-col h-[100vh]">
-            <h2 className="text-xl font-bold text-white p-4 border-b border-slate-700">Nhật ký trò chuyện</h2>
+            <h2 className="text-xl font-bold text-white p-4 border-b border-slate-700">{t('history_detail.chat_log')}</h2>
             <div className="flex-1 space-y-6 overflow-y-auto p-6">
               {history.messages.map((msg, index) => (
                 <ChatMessage key={`${msg.sender}-${index}`} message={msg} />
@@ -104,17 +107,17 @@ export default function HistoryDetail() {
           {/* Right: Score & Summary */}
           <div className="space-y-8">
             <section className="rounded-2xl border border-emerald-700 bg-gradient-to-br from-slate-800/50 to-emerald-900/30 p-6">
-              <h2 className="text-lg font-bold text-white mb-3">Điểm số cuối cùng</h2>
+              <h2 className="text-lg font-bold text-white mb-3">{t('history_detail.final_score')}</h2>
               <div className="text-center">
                 <div className="text-6xl font-extrabold text-emerald-400">{history.finalScore}</div>
-                <p className="text-slate-400 mt-1">/ 5 điểm</p>
+                <p className="text-slate-400 mt-1">{t('history_detail.score_out_of_5')}</p>
               </div>
             </section>
 
             {/* --- PHẦN MỚI: HIỂN THỊ CHI TIẾT ĐIỂM VÀ ANALYSIS --- */}
             {uniqueDetailedScores.length > 0 && (
               <section className="rounded-2xl border border-slate-700 bg-slate-800/50 p-6">
-                <h2 className="text-lg font-bold text-white mb-4">Chi tiết điểm & Phân tích</h2>
+                <h2 className="text-lg font-bold text-white mb-4">{t('history_detail.score_analysis')}</h2>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {uniqueDetailedScores.map((criterion, idx) => (
                     <div key={idx} className="bg-slate-900/50 rounded-lg p-3 border border-slate-700">
@@ -138,10 +141,10 @@ export default function HistoryDetail() {
             )}
 
             <section className="rounded-2xl border border-slate-700 bg-slate-800/50 p-6">
-              <h2 className="text-lg font-bold text-white mb-3">Tóm tắt bối cảnh cuối</h2>
+              <h2 className="text-lg font-bold text-white mb-3">{t('history_detail.final_context_summary')}</h2>
               <div className="bg-slate-900/50 rounded-lg p-4 text-sm text-slate-300 leading-relaxed max-h-96 overflow-y-auto">
                 <p style={{ whiteSpace: 'pre-wrap' }}>
-                  {history.finalState?.scene_summary || "Không có tóm tắt."}
+                  {history.finalState?.scene_summary || t('history_detail.no_summary')}
                 </p>
               </div>
             </section>
